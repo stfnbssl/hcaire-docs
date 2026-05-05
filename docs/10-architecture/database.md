@@ -34,7 +34,7 @@ Mongoose è usato in modalità default: nessun `strict: 'throw'`, nessuna opzion
 | `navigation` | `Navigation` | `models/Navigation.ts` | Menu dinamico (`order`, `isVisible`, `isSpecial`) |
 | `article-requests` | `ArticleRequest` | `models/ArticleRequest.ts` | Form richiesta articolo (testo libero + status) |
 | `opere` | `Opera` | `models/Opera.ts` | Letture critiche (slug, opera, step di analisi) |
-| `site-config` | `SiteConfig` | `models/SiteConfig.ts` | `status: 'test' \| 'live'` (vedi `SiteConfigContext`) |
+| `site-config` | `SiteConfig` | `models/SiteConfig.ts` | `status: 'test' \| 'production'` (vedi `SiteConfigContext`) |
 | `site-content` | `SiteContent` | `models/SiteContent.ts` | Stringhe UI con `translations: { it, en, ... }` |
 | `user-subscriptions` | `UserSubscription` | `models/UserSubscription.ts` | Stato abbonamento per `clerkUserId` (chiave logica) |
 | `workflow-logs` | `WorkflowLog` | `models/WorkflowLog.ts` | Log eventi articolo + Bartleby + pipeline |

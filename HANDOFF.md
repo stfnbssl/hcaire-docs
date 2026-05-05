@@ -15,7 +15,7 @@ Stato per fase:
 | **1 — Inventario tecnico** | ✓ completata | `docs/00-overview/cos-e-l-applicazione.md`, `mappa-moduli.md`, `inventario.md`, `glossario.md`, `obiettivi-funzionali.md` (stub). |
 | **2 — Architettura reale** | ✓ completata | 9 pagine in `docs/10-architecture/`: `stack-tecnologico.md`, `frontend.md`, `backend.md`, `database.md`, `autenticazione.md`, `routing.md`, `stato-applicativo.md`, `deployment.md`, `local-cowork-bridge.md`. 3 diagrammi Mermaid integrati: mappa sistema (stack §6), flusso login Clerk → contenuto plus (autenticazione §2), flusso eventi pipeline FE↔BE↔Mongo↔Redis (backend §6). Build verde. |
 | **TODO / proposte aperte** | ✓ avviata | Nuova area `docs/90-todo/`. Prima voce: `migrazioni-mongodb.md` (problema + 5 strategie candidate + raccomandazione di partenza). |
-| **3 — Schede modulo** | ✗ pending | `docs/20-modules/` ha solo `sviluppo-bambino/produzioni.md`. Da scrivere schede per: auth, contenuti, navigation, account, admin CMS, hcaire, letture, sviluppo-bambino narrativa. |
+| **3 — Schede modulo** | ✓ completata | 9 schede in `docs/20-modules/`: `autenticazione`, `contenuti`, `navigation`, `account`, `subscriptions`, `admin-cms`, `hcaire`, `letture`, `sviluppo-bambino/narrativa`, `sviluppo-bambino/corsi-f1-f2` (oltre alla già migrata `sviluppo-bambino/produzioni`). Build verde. |
 | **4 — Automazione (TypeDoc/OpenAPI/Storybook)** | ✗ pending | Decisione: dopo le schede modulo. |
 | **5 — Pubblicazione** | ✓ funzionante | `npm run start` su porta 3000 (locale). |
 
@@ -150,19 +150,25 @@ Le 9 pagine in `docs/10-architecture/` sono scritte e la build è verde. I tre d
 
 Nuova area `docs/90-todo/` per aspetti non ancora consolidati. Prima voce: `migrazioni-mongodb.md` con descrizione del problema, 5 strategie candidate (`migrate-mongo`, version field + custom, Atlas triggers, lazy migration, script ad-hoc in `scripts/`), raccomandazione di partenza ibrida e domande aperte da rispondere prima di scegliere.
 
-### Fase 3 — Schede modulo
+### Fase 3 — Schede modulo ✓ completata
 
-`docs/20-modules/` ha solo `sviluppo-bambino/produzioni.md`. Da scrivere schede con lo schema fisso (Scopo / Responsabilità / File / Componenti / Flusso / Dati / Dipendenze / Criticità / Test) per:
+10 schede scritte in `docs/20-modules/` seguendo lo schema fisso (Scopo / Responsabilità / File / Componenti / Flussi / Dati / Dipendenze / Criticità / Test):
 
-- `autenticazione.md` (Clerk + apiKey + middleware)
-- `contenuti.md` (CRUD blog, paywall plus)
-- `navigation.md`
-- `account.md` + `subscriptions.md` (Lemon Squeezy)
+- `autenticazione.md` (Clerk + apiKey + dead code legacy)
+- `contenuti.md` (CRUD blog, paywall plus, /import via api-key)
+- `navigation.md` (mix statico/dinamico)
+- `account.md` (pagina /account)
+- `subscriptions.md` (Lemon Squeezy: status/checkout/portal/change-plan/sync + webhook HMAC)
 - `admin-cms.md` (dashboard, site-config, site-content, requests, workflow log)
-- `hcaire.md` (verticale HCAIRE)
-- `letture.md` (letture critiche + step run)
-- `sviluppo-bambino/narrativa.md` (sotto sviluppo-bambino, accanto al già esistente `produzioni.md`)
-- `sviluppo-bambino/corsi-f1-f2.md` (i corsi stabili, F3 fuori scope)
+- `hcaire.md` (verticale HCAIRE: cascata index→standalone→subsection)
+- `letture.md` (10 step pipeline, integrato con [Local — ponte Cowork](./docs/10-architecture/local-cowork-bridge.md))
+- `sviluppo-bambino/narrativa.md` (18 pagine narrative + 22 endpoint)
+- `sviluppo-bambino/corsi-f1-f2.md` (slide React, F3 fuori scope)
+
+In aggiunta, durante la stesura sono state corrette **inaccuratezze trascinate da Fase 2**:
+
+- Endpoint subscription: era `/api/subscriptions/me` → è `/api/subscriptions/status` (corretto in 6 file).
+- Site config status: era `'test' | 'live'` → è `'test' | 'production'` (corretto in 4 file).
 
 ### Fase 4 — Automazione
 

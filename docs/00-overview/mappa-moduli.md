@@ -76,7 +76,7 @@ flowchart LR
 |--------|-----------|-----------------|
 | **Blog/CMS** | `/`, `/blog/:slug`, `/about` | `GET/POST/PUT/DELETE /api/contents`, `GET /api/contents/admin`, `POST /api/contents/import` |
 | **Navigation** | (componente globale) | `GET /api/navigation` |
-| **Account** | `/account` | `GET /api/subscriptions/me` (e webhook LS) |
+| **Account** | `/account` | `GET /api/subscriptions/status` (e webhook LS) |
 | **Pricing** | `/pricing` | (statico) |
 | **Article Requests** | `/admin/requests` | `GET/POST /api/article-requests` |
 | **Site Config** | `/admin/site-config` | `GET/PUT /api/site-config` |

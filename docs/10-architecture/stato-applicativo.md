@@ -39,7 +39,7 @@ Gating admin lato FE: `AdminRoute` in `App.tsx` controlla `user?.publicMetadata?
 
 ```ts
 interface SiteConfigContextValue {
-  siteStatus: 'test' | 'live';
+  siteStatus: 'test' | 'production';
   isTestMode: boolean;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -103,7 +103,7 @@ interface SubscriptionContextValue {
 ### Comportamento
 
 - Scatta solo se `isSignedIn === true` (Clerk).
-- Su login: chiama `getSubscriptionStatus(token)` → `GET /api/subscriptions/me`.
+- Su login: chiama `getSubscriptionStatus(token)` → `GET /api/subscriptions/status`.
 - Su logout: `setSubscription(null)`.
 - Hook: `useSubscription()`.
 

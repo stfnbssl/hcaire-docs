@@ -147,7 +147,7 @@ app.use('/api',                  authRoutes)   // legacy, dead — vedi Autentic
 | Contenuti | `GET/POST/PUT/DELETE /api/contents`, `GET /api/contents/admin`, `POST /api/contents/import` | Public + `optionalClerkAuth` + `requireAdmin` + `authenticateApiKey` (per `/import`) |
 | Navigation | `GET /api/navigation` | Public |
 | Article requests | `GET/POST /api/article-requests` | Public (POST), admin (GET) |
-| Subscriptions | `GET /api/subscriptions/me` | `requireAuth` |
+| Subscriptions | `GET /api/subscriptions/status` | `requireAuth` |
 | Site config | `GET /api/site-config`, `PUT /api/site-config` | Public (GET), admin (PUT) |
 | Site content | `GET /api/site-content`, `GET/PUT /api/admin/site-content` | Public + admin |
 | HCAIRE | `GET /api/hcaire/`, `/api/hcaire/:section`, `/api/hcaire/:section/:subsection` | Public |

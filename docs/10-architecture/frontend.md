@@ -25,7 +25,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 ClerkProvider                       (publishableKey da VITE_CLERK_PUBLISHABLE_KEY)
 └── ThemeProvider (MUI) + CssBaseline
     └── BrowserRouter
-        └── SiteConfigProvider     (siteStatus 'test' | 'live' da /api/site-config)
+        └── SiteConfigProvider     (siteStatus 'test' | 'production' da /api/site-config)
             └── SiteContentProvider (i18n con cache localStorage 1h)
                 └── SubscriptionProvider (status + plan, richiede getToken Clerk)
                     └── AppLayout
@@ -95,7 +95,7 @@ Quattro provider, tutti basati su React Context (niente Redux, Zustand, ecc.):
 | `ClerkProvider` | (libreria) | Sessione utente, token JWT |
 | `SiteConfigProvider` | `context/SiteConfigContext.tsx` | Modalità sito (`test`/`live`) — fetch da `/api/site-config` |
 | `SiteContentProvider` | `context/SiteContentContext.tsx` | i18n: default JSON in `public/locales/{lang}/common.json` + overlay DB con cache localStorage TTL 1h |
-| `SubscriptionProvider` | `context/SubscriptionContext.tsx` | Stato abbonamento Lemon Squeezy (`active`, `on_trial`, plan) — chiama `/api/subscriptions/me` con token Clerk |
+| `SubscriptionProvider` | `context/SubscriptionContext.tsx` | Stato abbonamento Lemon Squeezy (`active`, `on_trial`, plan) — chiama `/api/subscriptions/status` con token Clerk |
 
 Vedi [Stato applicativo](./stato-applicativo.md) per le API esposte.
 

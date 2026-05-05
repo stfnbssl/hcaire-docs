@@ -44,7 +44,7 @@ sequenceDiagram
   SPA->>Clerk: SignIn flow (modale Clerk)
   Clerk-->>SPA: sessione + JWT
   SPA->>SPA: SubscriptionProvider triggers fetch
-  SPA->>API: GET /api/subscriptions/me (Bearer token)
+  SPA->>API: GET /api/subscriptions/status (Bearer token)
   API->>API: requireAuth (clerkMiddleware)
   API->>DB: find UserSubscription by clerkUserId
   API-->>SPA: { status, plan }
