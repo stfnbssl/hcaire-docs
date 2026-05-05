@@ -53,7 +53,7 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (7 step, pipeline v2.3)
+### Fase 2 — Ricerche tematiche (7 step, pipeline v2.4)
 | Step | Etichetta | File-prefix | Note |
 |---|---|---|---|
 | `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step lanciabile direttamente (post v2.2). Il tema arriva dall'Archivio via `scelta_tema` auto-popolato (no input form richiesto). |
@@ -424,6 +424,16 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v2.4 — 2026-05-05
+
+`f2_step_2a` e `f2_step_4b` ora skippabili: aggiunto `can_skip: true` + `skip_condition` (motivazione raccomandata) nel config.
+
+**Motivazione**: la sequenza lineare forzata di v2.3 era troppo rigida — se i nodi candidati o la micro-matrice sono già strutturalmente pronti per gli step successivi, costringere ad eseguire 2a/4b è solo overhead. Il sistema di skip esisteva già lato server (`POST /api/pipeline/temi/:id/steps/:stepId/skip` con `reason` obbligatoria) ma era bloccato dal `can_skip: false`.
+
+**UI**: in `StepRow` il bottone **"Salta"** è ora un pulsante secondario inline accanto a "Lancia" (prima era nel menu `▾`, meno scopribile). Visibile solo quando `state.can_skip && state.status ∈` `{non_avviato, attende_input}`. Click → dialog di conferma con campo motivazione obbligatorio.
+
+**Step F2 skippabili in v2.4**: `f2_step_2a`, `f2_step_4b`. Tutti gli altri F2 sono `can_skip: false` (sono nodi strutturali della pipeline). Anche alcuni step F3 erano già skippabili da prima (vedi config).
 
 ### Pipeline v2.3 — 2026-05-05
 
