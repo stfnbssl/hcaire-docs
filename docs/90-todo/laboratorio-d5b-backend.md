@@ -7,6 +7,24 @@ sidebar_position: 2
 
 > **Stato**: documento di lavoro per allineare il backend al rifacimento UX `D5b-laboratorio-workbench.md` (cartella `claude-cowork/Sviluppo Bambino/input/produzioni/webapp-hcaire/specifiche/`). La spec D5b descrive solo il frontend; questo documento traduce le sue richieste in un piano di refactor concreto del server e del modello dati. Da rivedere e validare prima di iniziare l'implementazione.
 
+## 0. Stato attuale (2026-05-05) — bridge transitorio attivo
+
+Una versione **bridge** del flusso "tema promosso → pipeline F2" è già attiva, in attesa del refactor completo descritto in questo documento.
+
+- L'**Archivio temi** (`/archivio/temi`) è completo e funzionante (commit `b280b88` su hcaire-blog). Collection `temi` con lifecycle `stato`. Seed da `client/src/data/theme-discovery-v1.json` via `npm run seed:archivio`.
+- Quando l'admin promuove un tema (`maturo → promosso`), il bridge crea **anche** un record `PipelineContext` con `context_type: 'ricerca'` e `context_id = tema_id`. La logica di pipeline esistente (`pipelineController.runStep`/`verifyExecution`/...) trova quindi il context con cui lavorare.
+- Dall'Archivio, sui temi `promosso` o oltre, c'è un'icona **"Apri laboratorio"** che linka a `/sviluppo-bambino/produzioni/pipeline/ricerche/:tema_id` (la pagina `SviluppoBambinoPipelineRicercaOverview` esistente con `OrchestrationPanel` legacy).
+
+**Conseguenza**: due collection con record sovrapposti per lo stesso tema (`temi.tema_id` ↔ `pipeline_contexts.context_id` matchano per slug). Il refactor D5b di questo documento elimina la duplicazione consolidando tutto su `temi`.
+
+**Non è incluso nel bridge**:
+
+- F3 / dispositivi: il flusso `verifyExecution` su `f2_step_5` continua a generare `pending_decision: 'f2_to_f3_tema_selection'` come oggi. Va rimosso col refactor D5b.
+- Workbench / TimelineRail di D5b: l'UI è ancora `OrchestrationPanel` legacy.
+- `f2_step_1` è ancora nel config v2.0 (rimossione prevista da Q3 ma rimandata col refactor).
+
+Il bridge è marcato esplicitamente come transitorio nel codice (commento in `archivioTemiController.promuoveTema`).
+
 ## 1. Sintesi
 
 D5b introduce un **modello a tre entità** (Archivio temi → Tema/RicercaF2 → DispositivoF3 contestualizzato, 1-1-N) che rimpiazza il modello implicito attuale (1 ricerca → 1 tema F3, accoppiati via `pending_decision`).
