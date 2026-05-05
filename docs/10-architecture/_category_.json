@@ -1,0 +1,9 @@
+{
+  "label": "Architettura",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "Architettura tecnica",
+    "description": "Stack, frontend, backend, database, autenticazione, routing, deployment."
+  }
+}

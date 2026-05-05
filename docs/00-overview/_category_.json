@@ -1,0 +1,9 @@
+{
+  "label": "Panoramica",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "Panoramica del progetto",
+    "description": "Cos'è l'applicazione, mappa dei moduli, glossario, inventario tecnico."
+  }
+}

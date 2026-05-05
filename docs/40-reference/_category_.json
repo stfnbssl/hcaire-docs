@@ -1,0 +1,9 @@
+{
+  "label": "Reference",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "title": "Reference automatico",
+    "description": "Spazio per TypeDoc, Storybook, OpenAPI generati. Sarà popolato in Fase 4."
+  }
+}

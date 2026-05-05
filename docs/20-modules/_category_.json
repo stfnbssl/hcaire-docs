@@ -1,0 +1,9 @@
+{
+  "label": "Moduli",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Moduli applicativi",
+    "description": "Schede tecniche dei moduli del core: scopo, file, flussi, dati, criticità."
+  }
+}

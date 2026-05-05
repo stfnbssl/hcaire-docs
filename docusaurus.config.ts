@@ -1,0 +1,72 @@
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
+import type * as Preset from '@docusaurus/preset-classic';
+
+const config: Config = {
+  title: 'HCAIRE — Documentazione tecnica',
+  tagline: 'Documentazione del monorepo hcaire-blog',
+  favicon: 'img/favicon.ico',
+
+  url: 'http://localhost',
+  baseUrl: '/',
+
+  organizationName: 'stfnbssl',
+  projectName: 'hcaire-docs',
+
+  onBrokenLinks: 'warn',
+
+  i18n: {
+    defaultLocale: 'it',
+    locales: ['it'],
+  },
+
+  markdown: {
+    mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
+  themes: ['@docusaurus/theme-mermaid'],
+
+  presets: [
+    [
+      'classic',
+      {
+        docs: {
+          routeBasePath: '/',
+          sidebarPath: './sidebars.ts',
+          showLastUpdateTime: true,
+        },
+        blog: false,
+        theme: {
+          customCss: './src/css/custom.css',
+        },
+      } satisfies Preset.Options,
+    ],
+  ],
+
+  themeConfig: {
+    navbar: {
+      title: 'HCAIRE Docs',
+      items: [
+        {
+          type: 'docSidebar',
+          sidebarId: 'docs',
+          position: 'left',
+          label: 'Documentazione',
+        },
+      ],
+    },
+    footer: {
+      style: 'dark',
+      copyright: `© ${new Date().getFullYear()} HCAIRE — Documentazione tecnica.`,
+    },
+    prism: {
+      theme: prismThemes.github,
+      darkTheme: prismThemes.dracula,
+      additionalLanguages: ['bash', 'json', 'typescript', 'tsx'],
+    },
+  } satisfies Preset.ThemeConfig,
+};
+
+export default config;

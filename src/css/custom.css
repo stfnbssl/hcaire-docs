@@ -1,0 +1,26 @@
+/**
+ * HCAIRE Docs — stili custom per Docusaurus
+ */
+
+:root {
+  --ifm-color-primary: #2e5b9c;
+  --ifm-color-primary-dark: #29528c;
+  --ifm-color-primary-darker: #274d84;
+  --ifm-color-primary-darkest: #20406d;
+  --ifm-color-primary-light: #3364ac;
+  --ifm-color-primary-lighter: #3669b4;
+  --ifm-color-primary-lightest: #4d7cc1;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] {
+  --ifm-color-primary: #6a93d4;
+  --ifm-color-primary-dark: #4f80cb;
+  --ifm-color-primary-darker: #4276c6;
+  --ifm-color-primary-darkest: #355fa3;
+  --ifm-color-primary-light: #85a6dd;
+  --ifm-color-primary-lighter: #92b0e1;
+  --ifm-color-primary-lightest: #b8cbeb;
+  --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+}

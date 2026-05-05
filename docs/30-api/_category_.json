@@ -1,0 +1,9 @@
+{
+  "label": "API",
+  "position": 4,
+  "link": {
+    "type": "generated-index",
+    "title": "API e backend",
+    "description": "Endpoint REST esposti dal server Express. In futuro arricchito con OpenAPI/Swagger."
+  }
+}
