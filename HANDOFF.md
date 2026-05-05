@@ -16,7 +16,7 @@ Stato per fase:
 | **2 — Architettura reale** | ✓ completata | 9 pagine in `docs/10-architecture/`: `stack-tecnologico.md`, `frontend.md`, `backend.md`, `database.md`, `autenticazione.md`, `routing.md`, `stato-applicativo.md`, `deployment.md`, `local-cowork-bridge.md`. 3 diagrammi Mermaid integrati: mappa sistema (stack §6), flusso login Clerk → contenuto plus (autenticazione §2), flusso eventi pipeline FE↔BE↔Mongo↔Redis (backend §6). Build verde. |
 | **TODO / proposte aperte** | ✓ avviata | Nuova area `docs/90-todo/`. Prima voce: `migrazioni-mongodb.md` (problema + 5 strategie candidate + raccomandazione di partenza). |
 | **3 — Schede modulo** | ✓ completata | 9 schede in `docs/20-modules/`: `autenticazione`, `contenuti`, `navigation`, `account`, `subscriptions`, `admin-cms`, `hcaire`, `letture`, `sviluppo-bambino/narrativa`, `sviluppo-bambino/corsi-f1-f2` (oltre alla già migrata `sviluppo-bambino/produzioni`). Build verde. |
-| **4 — Automazione (TypeDoc/OpenAPI/Storybook)** | ✗ pending | Decisione: dopo le schede modulo. |
+| **4 — Automazione (TypeDoc/OpenAPI/Storybook)** | ◐ parziale | TypeDoc + OpenAPI + script `sync-docs` implementati. Storybook proposto ma non implementato. Vedi `docs/30-api/`. |
 | **5 — Pubblicazione** | ✓ funzionante | `npm run start` su porta 3000 (locale). |
 
 ## 2. Decisioni di scope (prese il 2026-05-05)
@@ -170,9 +170,32 @@ In aggiunta, durante la stesura sono state corrette **inaccuratezze trascinate d
 - Endpoint subscription: era `/api/subscriptions/me` → è `/api/subscriptions/status` (corretto in 6 file).
 - Site config status: era `'test' | 'live'` → è `'test' | 'production'` (corretto in 4 file).
 
-### Fase 4 — Automazione
+### Fase 4 — Automazione ◐ parziale
 
-Dopo le schede modulo. Da introdurre TypeDoc, OpenAPI/Swagger UI, Storybook con script `npm run sync-docs`.
+**Implementato:**
+
+- **TypeDoc** generato automaticamente da `../hcaire-blog/server/src/` via `npx typedoc` configurato in `typedoc.json`. Output in `static/typedoc/` (gitignored, ~7.4 MB / 298 file). Esposto a `/typedoc/`.
+- **OpenAPI 3.1** hand-written in `static/openapi.yaml` (~17 path stabili: contents, navigation, subscriptions, site-config, site-content, letture, webhook LS). Rendering Redoc via plugin `redocusaurus`, esposto a `/api-reference/`.
+- **Script `sync-docs`** in `scripts/sync-docs.mjs`: verifica sibling layout, esegue TypeDoc, controlla openapi.yaml, riporta riepilogo. Comando `npm run sync-docs`.
+- **4 pagine docs** in `docs/30-api/`: index, openapi, typedoc, storybook.
+
+**Non implementato (intenzionalmente):**
+
+- **Storybook**: documentato in `docs/30-api/storybook.md` come proposta. Decisione: aspettare uno dei tre trigger (team frontend > 1, refactor verso design system, estrazione libreria). Costo/beneficio attuale basso per via dei componenti corso-fase\* poco riutilizzabili.
+
+**Aggiunte in `package.json` di hcaire-docs:**
+
+- `typedoc` (devDep) — generatore.
+- `redocusaurus` (dep) — preset Docusaurus per Redoc.
+- Script `npm run sync-docs` e `npm run typedoc`.
+
+**Setup su nuova macchina** (vedi anche §5):
+
+```bash
+cd hcaire-docs && npm install
+npm run sync-docs    # genera static/typedoc/ — DEVE girare prima del primo build
+npm run build        # ora include /typedoc/ + /api-reference/
+```
 
 ### Fase 5 — Pubblicazione
 

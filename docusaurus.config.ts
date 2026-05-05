@@ -43,6 +43,21 @@ const config: Config = {
         },
       } satisfies Preset.Options,
     ],
+    [
+      'redocusaurus',
+      {
+        specs: [
+          {
+            id: 'rest-api',
+            spec: 'static/openapi.yaml',
+            route: '/api-reference/',
+          },
+        ],
+        theme: {
+          primaryColor: '#0284c7',
+        },
+      },
+    ],
   ],
 
   themeConfig: {
@@ -54,6 +69,11 @@ const config: Config = {
           sidebarId: 'docs',
           position: 'left',
           label: 'Documentazione',
+        },
+        {
+          to: '/api-reference/',
+          label: 'API reference',
+          position: 'left',
         },
       ],
     },

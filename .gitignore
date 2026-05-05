@@ -108,6 +108,9 @@ dist
 .docusaurus
 /build
 
+# TypeDoc generated output (rigenerato da `npm run sync-docs`)
+/static/typedoc/
+
 # Serverless directories
 .serverless/
 

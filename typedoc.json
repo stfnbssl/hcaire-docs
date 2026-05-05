@@ -1,0 +1,32 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "HCAIRE — API reference (server)",
+  "entryPointStrategy": "expand",
+  "entryPoints": [
+    "../hcaire-blog/server/src/services",
+    "../hcaire-blog/server/src/middleware",
+    "../hcaire-blog/server/src/models",
+    "../hcaire-blog/server/src/controllers",
+    "../hcaire-blog/server/src/utils",
+    "../hcaire-blog/server/src/types",
+    "../hcaire-blog/server/src/config"
+  ],
+  "tsconfig": "../hcaire-blog/server/tsconfig.json",
+  "out": "static/typedoc",
+  "exclude": [
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/bartleby/**",
+    "**/bartlebyController.ts",
+    "**/seedBartleby.ts"
+  ],
+  "skipErrorChecking": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "readme": "none",
+  "githubPages": false,
+  "hideGenerator": true,
+  "navigationLinks": {
+    "Documentazione": "/"
+  }
+}

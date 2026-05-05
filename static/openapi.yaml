@@ -1,0 +1,624 @@
+openapi: 3.1.0
+info:
+  title: HCAIRE Blog — REST API
+  version: 0.1.0
+  description: |
+    Specifica OpenAPI 3.1 dell'API REST esposta da `hcaire-blog/server` (Express).
+
+    **Stato**: hand-written, copre gli endpoint pubblici e admin core. Endpoint dei verticali narrativi
+    (`/api/hcaire/*`, `/api/sviluppo-bambino/*`) e della pipeline (`/api/pipeline/*`, `/api/admin/letture/*/run`)
+    sono documentati nelle relative schede modulo (vedi `docs/20-modules/`).
+
+    Per i dettagli architetturali (middleware, ordine di mount, auth) vedi
+    [Architettura → Backend](/architecture/backend) e [Architettura → Routing](/architecture/routing).
+  license:
+    name: Proprietary
+servers:
+  - url: http://localhost:3018
+    description: Dev server locale
+  - url: https://api.hcaire.example
+    description: Produzione (Railway) — host segnaposto
+tags:
+  - name: contents
+    description: Articoli del blog (CRUD + paywall plus)
+  - name: navigation
+    description: Menu di navigazione dinamico
+  - name: subscriptions
+    description: Abbonamento Lemon Squeezy
+  - name: site-config
+    description: Modalità sito (test/production)
+  - name: site-content
+    description: Stringhe UI internazionalizzate
+  - name: letture
+    description: Letture critiche (pubblico)
+  - name: webhooks
+    description: Webhook in entrata da servizi esterni
+  - name: health
+    description: Probe di liveness
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      description: |
+        Esposto **prima** di qualsiasi middleware. Risponde anche se la connessione
+        al DB è in stato `connecting`. Vedi [Backend §2](/architecture/backend#2-health-check).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  db:
+                    type: string
+                    enum: [connected, connecting]
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/contents:
+    get:
+      tags: [contents]
+      summary: Lista articoli pubblicati (paginata)
+      parameters:
+        - in: query
+          name: page
+          schema: { type: integer, default: 1, minimum: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10, minimum: 1, maximum: 100 }
+      responses:
+        '200':
+          description: Lista articoli (corpo `contenuto` escluso dalla proiezione)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ContentSummary' }
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    post:
+      tags: [contents]
+      summary: Crea articolo (admin)
+      security: [{ ClerkBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContentInput' }
+      responses:
+        '201':
+          description: Articolo creato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Content' }
+        '400':
+          description: Slug duplicato o input non valido
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/contents/admin:
+    get:
+      tags: [contents]
+      summary: Lista articoli (admin) — anche bozze, full payload
+      security: [{ ClerkBearer: [] }]
+      responses:
+        '200':
+          description: Tutti gli articoli, sort `createdAt` desc
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Content' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/contents/import:
+    post:
+      tags: [contents]
+      summary: Crea articolo via API key (Cowork)
+      description: |
+        Endpoint dedicato all'automazione: il worker `local/coworker.ts` chiama questo
+        path con `Authorization: Bearer <COWORK_API_KEY>` per pubblicare articoli
+        generati. Se nel body è presente `articleRequestId`, l'evento `article_published`
+        viene loggato su `WorkflowLog`.
+      security: [{ ApiKey: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/ContentInput'
+                - type: object
+                  properties:
+                    articleRequestId:
+                      type: string
+                      description: ObjectId della ArticleRequest originale (opzionale)
+      responses:
+        '201':
+          description: Articolo creato
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Content' }
+        '400': { description: Slug duplicato o input non valido }
+        '401': { description: API key mancante }
+        '403': { description: API key invalida }
+
+  /api/contents/{slug}:
+    get:
+      tags: [contents]
+      summary: Singolo articolo (paywall plus applicato)
+      description: |
+        Risposta variabile in base a `accessType` + sessione. Vedi
+        [scheda modulo Contenuti §6.1](/modules/contenuti#61-lettura-articolo-plus).
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: |
+            Articolo pieno. Se `locked: true`, l'utente non ha accesso al `plus`:
+            `contenuto` è vuoto (teaser). In modalità `test` il contenuto è
+            sempre visibile ma `locked: true` per il banner sobrio.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Content'
+                  - type: object
+                    properties:
+                      locked: { type: boolean }
+        '404': { description: Slug non trovato }
+
+  /api/navigation:
+    get:
+      tags: [navigation]
+      summary: Voci visibili del menu, ordinate
+      responses:
+        '200':
+          description: Array sort `order` ASC
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/NavigationItem' }
+
+  /api/subscriptions/status:
+    get:
+      tags: [subscriptions]
+      summary: Stato abbonamento dell'utente loggato
+      security: [{ ClerkBearer: [] }]
+      responses:
+        '200':
+          description: Stato corrente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [active, on_trial, paused, cancelled, expired, past_due, none]
+                  plan:
+                    type: string
+                    enum: [none, abbonato, bartleby, bartleby_plus]
+                  currentPeriodEnd:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/subscriptions/checkout:
+    post:
+      tags: [subscriptions]
+      summary: Crea checkout Lemon Squeezy
+      security: [{ ClerkBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [abbonato, bartleby, bartleby_plus]
+              required: [plan]
+      responses:
+        '200':
+          description: URL del checkout LS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  checkoutUrl: { type: string, format: uri }
+        '400': { description: Piano non riconosciuto }
+        '502': { description: Errore upstream Lemon Squeezy }
+
+  /api/subscriptions/portal:
+    post:
+      tags: [subscriptions]
+      summary: Recupera URL del portale cliente Lemon Squeezy
+      security: [{ ClerkBearer: [] }]
+      responses:
+        '200':
+          description: URL portale
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  portalUrl: { type: string, format: uri }
+        '404': { description: Nessuna subscription trovata }
+        '502': { description: Errore upstream Lemon Squeezy }
+
+  /api/subscriptions/change-plan:
+    post:
+      tags: [subscriptions]
+      summary: Cambia piano sull'abbonamento attivo
+      security: [{ ClerkBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan:
+                  type: string
+                  enum: [abbonato, bartleby, bartleby_plus]
+              required: [plan]
+      responses:
+        '200':
+          description: Nuovo stato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan: { type: string }
+                  status: { type: string }
+        '400': { description: Piano non riconosciuto o già attivo }
+        '404': { description: Nessuna subscription attiva }
+        '502': { description: Errore upstream Lemon Squeezy }
+
+  /api/subscriptions/sync:
+    post:
+      tags: [subscriptions]
+      summary: Riconcilia DB con Lemon Squeezy via email
+      description: |
+        Fallback usato quando il webhook è in ritardo. Vedi
+        [scheda modulo Subscriptions §6.4](/modules/subscriptions#64-sync-riconciliazione).
+      security: [{ ClerkBearer: [] }]
+      responses:
+        '200':
+          description: Stato sincronizzato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string }
+                  plan: { type: string }
+                  currentPeriodEnd: { type: string, format: date-time, nullable: true }
+
+  /api/site-config:
+    get:
+      tags: [site-config]
+      summary: Modalità del sito (pubblico)
+      responses:
+        '200':
+          description: Status corrente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [test, production]
+    put:
+      tags: [site-config]
+      summary: Aggiorna modalità (admin)
+      security: [{ ClerkBearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [test, production]
+              required: [status]
+      responses:
+        '200':
+          description: Status aggiornato
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [test, production] }
+        '400': { description: Status non valido }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/site-content:
+    get:
+      tags: [site-content]
+      summary: Stringhe UI (pubblico, tutte le lingue)
+      responses:
+        '200':
+          description: Tutte le chiavi con traduzioni
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SiteContentItem' }
+
+  /api/admin/site-content:
+    get:
+      tags: [site-content]
+      summary: Lista admin
+      security: [{ ClerkBearer: [] }]
+      responses:
+        '200':
+          description: Tutte le chiavi sort `(namespace, key)`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/SiteContentItem' }
+
+  /api/letture:
+    get:
+      tags: [letture]
+      summary: Lista letture critiche pubblicate
+      description: Filtra per `pipeline.step_5d.stato === 'completato'`. Vedi [scheda modulo Letture](/modules/letture).
+      responses:
+        '200':
+          description: Sommari opere pubblicate
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/OperaSummary' }
+
+  /api/letture/{slug}:
+    get:
+      tags: [letture]
+      summary: Singola lettura (con articolo finale)
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Opera con articolo finale (`step_5d.testo`)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Opera' }
+        '404': { description: Opera non trovata o non ancora pubblicata }
+
+  /webhooks/lemonsqueezy:
+    post:
+      tags: [webhooks]
+      summary: Webhook Lemon Squeezy
+      description: |
+        Verifica firma HMAC SHA256 (`x-signature`) sul body raw. Solo gli eventi
+        `subscription_*` con `meta.custom_data.clerk_user_id` impostato vengono processati.
+        Vedi [scheda modulo Subscriptions §6.2](/modules/subscriptions#62-webhook-event-handler).
+      parameters:
+        - in: header
+          name: x-signature
+          required: true
+          schema: { type: string }
+          description: HMAC-SHA256(body, LEMONSQUEEZY_WEBHOOK_SECRET) hex
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              description: Payload Lemon Squeezy (vedi docs LS per i dettagli)
+              type: object
+      responses:
+        '200':
+          description: Ricevuto (anche se evento ignorato — per evitare retry LS)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: boolean }
+        '400': { description: Body o firma mancante }
+        '403': { description: Firma non valida }
+
+components:
+  securitySchemes:
+    ClerkBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Token JWT Clerk. Lato FE: `useAuth().getToken()`. Lato server validato da
+        `requireAuth()` di `@clerk/express`. Vedi [Architettura → Autenticazione §4](/architecture/autenticazione#4-backend-middleware-clerk).
+    ApiKey:
+      type: http
+      scheme: bearer
+      description: |
+        API key statica (`COWORK_API_KEY`) usata dal worker `local/` per chiamare
+        `/api/contents/import`. Header: `Authorization: Bearer <COWORK_API_KEY>`.
+
+  responses:
+    Unauthorized:
+      description: Sessione mancante
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Permessi insufficienti
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    Pagination:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    ContentSummary:
+      type: object
+      description: Articolo senza il corpo (`contenuto` non incluso)
+      properties:
+        _id: { type: string }
+        slug: { type: string }
+        titolo: { type: string }
+        descrizione: { type: string }
+        autore: { type: string }
+        categoria: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean }
+        isPinned: { type: boolean }
+        accessType:
+          type: string
+          enum: [free, plus]
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Content:
+      allOf:
+        - $ref: '#/components/schemas/ContentSummary'
+        - type: object
+          properties:
+            contenuto:
+              type: string
+              description: Markdown del corpo
+
+    ContentInput:
+      type: object
+      properties:
+        slug: { type: string }
+        titolo: { type: string }
+        descrizione: { type: string }
+        contenuto: { type: string, description: Markdown }
+        autore: { type: string, default: admin }
+        categoria: { type: string, default: general }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean, default: true }
+        isPinned: { type: boolean, default: false }
+        accessType:
+          type: string
+          enum: [free, plus]
+          default: free
+      required: [slug, titolo]
+
+    NavigationItem:
+      type: object
+      properties:
+        _id: { type: string }
+        titolo: { type: string }
+        slug: { type: string }
+        isSpecial: { type: boolean, default: false }
+        order: { type: integer, default: 0 }
+        isVisible: { type: boolean, default: true }
+
+    SiteContentItem:
+      type: object
+      properties:
+        key: { type: string }
+        namespace: { type: string, default: common }
+        type:
+          type: string
+          enum: [plain, markdown]
+          default: plain
+        description: { type: string }
+        translations:
+          type: object
+          additionalProperties: { type: string }
+          description: 'Mappa lingua → traduzione, es. { it: "...", en: "..." }'
+        updatedAt: { type: string, format: date-time }
+
+    OperaSummary:
+      type: object
+      properties:
+        slug: { type: string }
+        titolo: { type: string }
+        autore: { type: string }
+        anno: { type: integer, nullable: true }
+        tipologia:
+          type: string
+          enum: [romanzo, racconto, film, opera teatrale, saggio narrativo, altro]
+        lingua_originale: { type: string, nullable: true }
+        stato:
+          type: string
+          enum: [in_attesa, in_corso, completata, sospesa]
+        priorita:
+          type: integer
+          minimum: 1
+          maximum: 5
+          nullable: true
+        note_di_ingresso: { type: string }
+        avanzamento:
+          type: object
+          properties:
+            completati: { type: integer }
+            totale: { type: integer }
+        step_stati:
+          type: object
+          additionalProperties:
+            type: string
+            enum: [non_avviato, in_coda, in_esecuzione, completato, errore]
+        pubblicata_il: { type: string, format: date-time, nullable: true }
+        testi_disponibili:
+          type: object
+          properties:
+            articolo: { type: boolean }
+            resoconto: { type: boolean }
+            saggio: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    Opera:
+      allOf:
+        - $ref: '#/components/schemas/OperaSummary'
+        - type: object
+          properties:
+            pipeline:
+              description: Stato per ogni step (10 step). Vedi modulo Letture §4.
+              type: object
