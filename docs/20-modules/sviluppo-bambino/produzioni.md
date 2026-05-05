@@ -53,10 +53,10 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (7 step, pipeline v2.1)
+### Fase 2 — Ricerche tematiche (7 step, pipeline v2.2)
 | Step | Etichetta | File-prefix | Note |
 |---|---|---|---|
-| `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step della pipeline; il tema arriva dall'Archivio via `scelta_tema` |
+| `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step lanciabile direttamente (post v2.2). Il tema arriva dall'Archivio via `scelta_tema` auto-popolato (no input form richiesto). |
 | `f2_step_2a` | Verifica nodi trasversali | `node-verification-*.json` | **v2.0** — mappa nodi candidati su N1–N7 canonici |
 | `f2_step_3` | Verifica | `theme-verification-*.json` | |
 | `f2_step_4` | Matrice | `theme-matrix-*.json` | |
@@ -424,6 +424,16 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v2.2 — 2026-05-05
+
+Rimosso `scelta_tema` da `inputs_esterni` di `f2_step_2`. La UI legacy (`OrchestrationPanel`) apriva il form di compilazione esterno anche quando l'input era già fornito (auto-popolato dal bridge Archivio→Laboratorio al momento della promozione), costringendo l'utente a confermare prima di lanciare. Con la rimozione dal config, la UI non chiede più il form: "Lancia" parte direttamente.
+
+**Come arriva `scelta_tema` a Cowork senza che sia dichiarato nel config**: `pipelineController.buildExecutionPlan` query la collection `pipeline_external_inputs` per **tutti** i record `(context_id, step_id)` non-superseded, senza filtrare per gli input dichiarati in config. Il record auto-popolato dal bridge resta nel DB e viene comunque incluso nel payload Redis verso Cowork. Questo è un dettaglio di implementazione del backend esistente, sfruttato qui per separare "cosa chiede la UI" (config-driven) da "cosa riceve il worker" (DB-driven).
+
+**Auto-popolamento**: alla promozione di un tema da `maturo → promosso`, `archivioTemiController.promuoveTema` crea un `PipelineExternalInput` con `input_id: 'scelta_tema'` e `data: { tema_label, descrizione, motivazione, asse_dominante_presunto, fonti, tema_id }`. Mapping: `tema.label → tema_label`, `tema.descrizione → descrizione`, `tema.note_ricercatore → motivazione`. I primi tre campi matchano lo schema atteso da Cowork (`external-input-schemas/f2-step-2-scelta-tema.json`); gli altri sono context aggiuntivo che Cowork può ignorare.
+
+**Heal**: lo script `npm run heal:archivio-bridge` ora ripara sia i `PipelineContext` mancanti sia i `scelta_tema` mancanti, indipendentemente.
 
 ### Pipeline v2.1 — 2026-05-05
 
