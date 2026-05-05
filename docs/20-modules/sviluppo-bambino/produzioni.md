@@ -53,16 +53,21 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (5 step)
-| Step | Etichetta | File-prefix |
-|---|---|---|
-| `f2_step_1` | Discovery | `theme-discovery-*.json` |
-| `f2_step_2` | Rilevanza | `theme-relevance-*.json` |
-| `f2_step_3` | Verifica | `theme-verification-*.json` |
-| `f2_step_4` | Matrice | `theme-matrix-*.json` |
-| `f2_step_5` | Output family | `output-family-*.json` |
+### Fase 2 — Ricerche tematiche (8 step, pipeline v2.0)
+| Step | Etichetta | File-prefix | Note |
+|---|---|---|---|
+| `f2_step_1` | Discovery | `theme-discovery-*.json` | |
+| `f2_step_2` | Rilevanza | `theme-relevance-*.json` | |
+| `f2_step_2a` | Verifica nodi trasversali | `node-verification-*.json` | **v2.0** — mappa nodi candidati su N1–N7 canonici |
+| `f2_step_3` | Verifica | `theme-verification-*.json` | |
+| `f2_step_4` | Matrice | `theme-matrix-*.json` | |
+| `f2_step_4b` | CE prototipica | `ce-prototipica-*.json` | **v2.0** — Grammatica CE (S, R, D, T, A) |
+| `f2_step_5` | Output family | `output-family-*.json` | |
+| `f2_step_6` | Output-tipo vuoto | `output-tipo-vuoto-*.json` | **v2.0** — passaporto del tema, input primario di `f3_step_1` |
 
-Una **ricerca** (`ricerche/<id>/`) è un contenitore di temi candidati. Lo step 5 produce la *output family* da cui possono essere selezionati temi che diventano oggetto di Fase 3.
+Una **ricerca** (`ricerche/<id>/`) è un contenitore di temi candidati. La pipeline v2.0 (introdotta il 2026-05-04, vedi [Storia](#storia-modifiche-pipeline)) aggiunge tre step di mediazione metodologica fra F2 e F3 per esplicitare la transizione attraverso il linguaggio formale del modello HCAIRE.
+
+In v2.0 `f3_step_1` consuma sia `output-tipo-vuoto-v{N}.json` (primario, da `f2_step_6`) sia `output-family-v{N}.json` (secondario, da `f2_step_5`). Il path `output-tipo-vuoto` vive in `ricerche/<id>/`, non in `temi/<id>/`: la risoluzione cross-folder è trasparente perché `step_states` del tema eredita `output_file` dalla ricerca al passaggio F2→F3 (vedi `pipelineController.postRicercaDecision`).
 
 ### Fase 3 — Costruzione del dispositivo (10+1 step)
 | Step | Etichetta | File-prefix |
@@ -416,3 +421,42 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 - Pagine: `client/src/pages/sviluppo-bambino/SviluppoBambinoProduzioni*.tsx`, `SviluppoBambinoPipeline*.tsx`
 - Componenti: `client/src/components/SviluppoBambinoProduzioniNav.tsx`, `client/src/components/SviluppoBambinoPipelineNav.tsx`, `client/src/components/pipeline/{DeviceLineage,CorrectionsLog,ProcessNarrative}.tsx`
 - Routing: `client/src/App.tsx` (linee `/sviluppo-bambino/produzioni/*`)
+
+---
+
+## Storia modifiche pipeline
+
+### Pipeline v2.0 — 2026-05-04
+
+Tre nuovi step F2 introdotti per esplicitare la transizione metodologica F2→F3 attraverso il linguaggio formale del modello HCAIRE. Sorgente: `aggiornamento-metodologico-pipeline-hcaire-v2.docx.md` prodotto da Claude Cowork.
+
+**Nuovi step:**
+
+| Step | Posizione | Funzione |
+|------|-----------|----------|
+| `f2_step_2a` | dopo `f2_step_2` | Mappa nodi candidati sui 7 Nodi Trasversali canonici N1–N7. Output: `node-verification-v{N}.json`. |
+| `f2_step_4b` | dopo `f2_step_4` | Traduce micro-matrice in Grammatica CE (S, R, D, T, A). Output: `ce-prototipica-v{N}.json`. |
+| `f2_step_6` | dopo `f2_step_5` (verificato) | Produce il "passaporto del tema" — input primario di `f3_step_1`. Output: `output-tipo-vuoto-v{N}.json`. |
+
+**Modifica a step esistente:**
+
+- `f3_step_1.inputs_pipeline` ora include `output-tipo-vuoto` (primario, da `f2_step_6`) **prima** di `output-family` (da `f2_step_5`).
+
+**Toccchi al codice (pipeline v2.0 → webapp):**
+
+| Modifica | File |
+|----------|------|
+| Config sostituito | `server/pipeline-step-config.json` (da claude-cowork sibling) |
+| Mapping wire-id → cartella Cowork | `local/src/pipeline/constants.ts` (`STEP_FOLDER_MAP`, +3 entry) |
+| Tipo TS step IDs | `client/src/types/pipeline.ts` (`PipelineStepId`, +3 letterali) |
+| Label UI | `client/src/components/pipeline/DeviceLineage.tsx`, `client/src/pages/sviluppo-bambino/SviluppoBambinoPipelineMap.tsx` |
+
+**Nessuna modifica** è stata necessaria a:
+
+- `stepConfigService`, `stepEnablement`, `pipelineService`, `pipelineController` (logica già data-driven sul JSON).
+- Schema MongoDB (`step_states` è `Record` dinamico, chiavi mancanti default a `'non_avviato'`).
+- Protocollo Redis o handler `local/src/pipeline/PipelineCommandHandler.ts` (path-resolver già supporta cross-folder).
+
+**Effetto sui dati esistenti:** i temi già passati F2→F3 prima della v2.0 non hanno `f2_step_6` completato, quindi `f3_step_1` su di loro diventa non-eseguibile. Accettabile in questa fase perché i contesti esistenti sono test che andranno cancellati.
+
+**Caveat operativo:** dopo la copia del nuovo `pipeline-step-config.json`, il server Express va riavviato a mano. `nodemon` watcha solo `src/**/*.ts`, non legge cambi al config root del workspace.
