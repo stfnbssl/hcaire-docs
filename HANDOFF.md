@@ -1,6 +1,6 @@
 # HANDOFF — Sistema di documentazione hcaire-docs
 
-> Snapshot **2026-05-05**. Questo file serve a riprendere il lavoro su un'altra macchina senza perdere contesto.
+> Snapshot **2026-05-05** (setup) → **aggiornamento 2026-05-05** (chiusura Fase 2). Questo file serve a riprendere il lavoro su un'altra macchina senza perdere contesto.
 
 ## 1. Cosa è stato fatto in questa sessione
 
@@ -13,7 +13,8 @@ Stato per fase:
 | **0 — Setup Docusaurus** | ✓ completata | `package.json`, `docusaurus.config.ts`, `sidebars.ts`, `tsconfig.json`, `src/css/custom.css`, `.gitignore` aggiornato. Build verde con `npm run build`. |
 | **Migrazione produzioni-architettura.md** | ✓ completata | Spostato in `docs/20-modules/sviluppo-bambino/produzioni.md`. Originale rimosso da `hcaire-blog/docs/`. |
 | **1 — Inventario tecnico** | ✓ completata | `docs/00-overview/cos-e-l-applicazione.md`, `mappa-moduli.md`, `inventario.md`, `glossario.md`, `obiettivi-funzionali.md` (stub). |
-| **2 — Architettura reale** | ✗ pending | `docs/10-architecture/` esiste ma vuota. Da popolare con stack, frontend, backend, database, auth, routing, deployment + 3 diagrammi Mermaid. |
+| **2 — Architettura reale** | ✓ completata | 9 pagine in `docs/10-architecture/`: `stack-tecnologico.md`, `frontend.md`, `backend.md`, `database.md`, `autenticazione.md`, `routing.md`, `stato-applicativo.md`, `deployment.md`, `local-cowork-bridge.md`. 3 diagrammi Mermaid integrati: mappa sistema (stack §6), flusso login Clerk → contenuto plus (autenticazione §2), flusso eventi pipeline FE↔BE↔Mongo↔Redis (backend §6). Build verde. |
+| **TODO / proposte aperte** | ✓ avviata | Nuova area `docs/90-todo/`. Prima voce: `migrazioni-mongodb.md` (problema + 5 strategie candidate + raccomandazione di partenza). |
 | **3 — Schede modulo** | ✗ pending | `docs/20-modules/` ha solo `sviluppo-bambino/produzioni.md`. Da scrivere schede per: auth, contenuti, navigation, account, admin CMS, hcaire, letture, sviluppo-bambino narrativa. |
 | **4 — Automazione (TypeDoc/OpenAPI/Storybook)** | ✗ pending | Decisione: dopo le schede modulo. |
 | **5 — Pubblicazione** | ✓ funzionante | `npm run start` su porta 3000 (locale). |
@@ -137,24 +138,17 @@ cd ../hcaire-docs && npm run start        # avvia documentazione su http://local
 
 ## 6. Piano residuo (cosa resta da fare)
 
-### Fase 2 — Architettura reale
+### Fase 2 — Architettura reale ✓ completata
 
-`docs/10-architecture/` è vuota. Da scrivere:
+Le 9 pagine in `docs/10-architecture/` sono scritte e la build è verde. I tre diagrammi Mermaid sono integrati. Aggiornata con i chiarimenti del proprietario (sessione 2026-05-05 macchina nuova):
 
-- `stack-tecnologico.md`
-- `frontend.md` — React 18, Vite, MUI, Tailwind, Clerk React, contesti globali, lazy loading admin, Cloudflare deploy
-- `backend.md` — Express 4, Mongoose, Clerk middleware, ordine middleware critico (webhooks → clerk → json), background services
-- `database.md` — MongoDB Atlas, lista collection (vedi inventario §2.2)
-- `autenticazione.md` — Clerk end-to-end (FE `useUser`, BE `clerkAuth.ts`, ruolo via `publicMetadata.role`)
-- `routing.md` — routes FE da `App.tsx`, routes BE da `index.ts`
-- `stato-applicativo.md` — context provider e gestione stato globale
-- `deployment.md` — Cloudflare per FE, server probabilmente self-host o piattaforma da chiarire
+- **Deployment**: `deployment.md` aggiornato con **Railway** come PaaS del server. Worker `local/` confermato girare solo sul portatile (vincolo strutturale: Cowork CLI è solo locale).
+- **Local — ponte Cowork**: nuova pagina `local-cowork-bridge.md` dedicata. Copre i 3 casi d'uso (articoli blog, letture critiche, produzioni Sviluppo Bambino), il pattern generalizzabile per nuovi casi, e la verifica esplicita che **ngrok non è presente nel codice** (Telegram in long-polling, no webhook).
+- **Auth legacy**: confermato dead code (`routes/auth.ts`, `middleware/auth.ts`). FE non chiama più `/api/login`/`/api/logout`. Pronto per essere rimosso, vedi `autenticazione.md` §7.
 
-**Diagrammi Mermaid da fare** (3, come da prompt originale):
+### Sezione TODO ✓ avviata
 
-1. Mappa del sistema (componenti + servizi esterni)
-2. Flusso utente principale (login Clerk → accesso a contenuto plus)
-3. Flusso dati FE↔BE↔Mongo↔Redis (per eventi pipeline)
+Nuova area `docs/90-todo/` per aspetti non ancora consolidati. Prima voce: `migrazioni-mongodb.md` con descrizione del problema, 5 strategie candidate (`migrate-mongo`, version field + custom, Atlas triggers, lazy migration, script ad-hoc in `scripts/`), raccomandazione di partenza ibrida e domande aperte da rispondere prima di scegliere.
 
 ### Fase 3 — Schede modulo
 
