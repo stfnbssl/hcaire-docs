@@ -53,7 +53,7 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (7 step, pipeline v2.2)
+### Fase 2 — Ricerche tematiche (7 step, pipeline v2.3)
 | Step | Etichetta | File-prefix | Note |
 |---|---|---|---|
 | `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step lanciabile direttamente (post v2.2). Il tema arriva dall'Archivio via `scelta_tema` auto-popolato (no input form richiesto). |
@@ -424,6 +424,18 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v2.3 — 2026-05-05
+
+Rese `required: true` le tre dipendenze precedentemente facoltative ("raccomandate"):
+
+- `f2_step_3.inputs_pipeline` → `f2_step_2a` ora obbligatoria.
+- `f2_step_4b.inputs_pipeline` → `f2_step_2a` ora obbligatoria.
+- `f2_step_6.inputs_pipeline` → `f2_step_4b` ora obbligatoria.
+
+**Motivazione**: la spec metodologica originale (v2.0) le aveva indicate come facoltative ma raccomandate. In pratica la pipeline è una sequenza lineare `2 → 2a → 3 → 4 → 4b → 5 → 6`: lasciare 2a e 4b facoltativi creava un'ambiguità (potevano non eseguirsi senza preavviso). Ora la sequenza è forzata: ogni step a valle attende il completamento del precedente.
+
+**Per saltare uno step** (caso eccezionale, motivato): usare l'azione esplicita di skip (`POST /api/pipeline/temi/:id/steps/:stepId/skip` con `reason` obbligatoria). Il sistema di skip era già presente (vedi `pipelineController.skipStep`); ora è la via ufficiale per non eseguire 2a o 4b.
 
 ### Pipeline v2.2 — 2026-05-05
 
