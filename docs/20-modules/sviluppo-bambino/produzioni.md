@@ -53,11 +53,10 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (8 step, pipeline v2.0)
+### Fase 2 — Ricerche tematiche (7 step, pipeline v2.1)
 | Step | Etichetta | File-prefix | Note |
 |---|---|---|---|
-| `f2_step_1` | Discovery | `theme-discovery-*.json` | |
-| `f2_step_2` | Rilevanza | `theme-relevance-*.json` | |
+| `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step della pipeline; il tema arriva dall'Archivio via `scelta_tema` |
 | `f2_step_2a` | Verifica nodi trasversali | `node-verification-*.json` | **v2.0** — mappa nodi candidati su N1–N7 canonici |
 | `f2_step_3` | Verifica | `theme-verification-*.json` | |
 | `f2_step_4` | Matrice | `theme-matrix-*.json` | |
@@ -65,7 +64,7 @@ Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 | `f2_step_5` | Output family | `output-family-*.json` | |
 | `f2_step_6` | Output-tipo vuoto | `output-tipo-vuoto-*.json` | **v2.0** — passaporto del tema, input primario di `f3_step_1` |
 
-Una **ricerca** (`ricerche/<id>/`) è un contenitore di temi candidati. La pipeline v2.0 (introdotta il 2026-05-04, vedi [Storia](#storia-modifiche-pipeline)) aggiunge tre step di mediazione metodologica fra F2 e F3 per esplicitare la transizione attraverso il linguaggio formale del modello HCAIRE.
+Una **ricerca** (`ricerche/<id>/`) ospita la pipeline F2 di un tema promosso dall'[Archivio temi](../../90-todo/laboratorio-d5b-backend.md#12-archivio-temi-q2--pagina-di-data-entry). La pipeline v2.0 (2026-05-04) aggiunge tre step di mediazione metodologica fra F2 e F3 (`2a`, `4b`, `6`); la v2.1 (2026-05-05) rimuove `f2_step_1` (discovery) la cui funzione è confluita nell'Archivio. Il primo step eseguibile è quindi `f2_step_2`, che riceve il tema scelto via `scelta_tema` (input esterno, popolato manualmente o copiato dall'Archivio).
 
 In v2.0 `f3_step_1` consuma sia `output-tipo-vuoto-v{N}.json` (primario, da `f2_step_6`) sia `output-family-v{N}.json` (secondario, da `f2_step_5`). Il path `output-tipo-vuoto` vive in `ricerche/<id>/`, non in `temi/<id>/`: la risoluzione cross-folder è trasparente perché `step_states` del tema eredita `output_file` dalla ricerca al passaggio F2→F3 (vedi `pipelineController.postRicercaDecision`).
 
@@ -425,6 +424,12 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v2.1 — 2026-05-05
+
+Rimosso `f2_step_1` (discovery) dal `pipeline-step-config.json`. La sua funzione è ora gestita dall'[Archivio temi](../../90-todo/laboratorio-d5b-backend.md#12-archivio-temi-q2--pagina-di-data-entry): un tema promosso dall'Archivio entra nella pipeline F2 a partire da `f2_step_2`. Le dipendenze pipeline `theme-discovery` sono state rimosse anche dagli step a valle (2, 3, 4, 5).
+
+**Effetti collaterali**: nessuno sui flussi nuovi. Per le ricerche pre-v2.1 con `f2_step_1` già eseguito: l'output `theme-discovery-v{N}.json` resta sul filesystem ma non è più letto come dipendenza della pipeline.
 
 ### Pipeline v2.0 — 2026-05-04
 
