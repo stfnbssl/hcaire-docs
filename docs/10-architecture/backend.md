@@ -117,9 +117,13 @@ Speculare in `services/lettureMessageBus.ts` su `hcaire:letture:*`.
 
 Lo `$push` su `log_lines` di `PipelineStepExecution` è quindi batched.
 
-### Override step 6b
+### Trigger F2 → F3 (bridge ambiti)
 
-Quando arriva un `pipeline.step.completed` per `f3_step_6b` con stato `completato`, il subscriber imposta `overrides_applied.step_6b_proxy = true` su `PipelineContext`. Il frontend continua ad applicare l'override a runtime sul JSON dello step 9 (vedi [Produzioni §5](../20-modules/sviluppo-bambino/produzioni.md#5-servizio-di-accesso-ai-dati-clientsrcservicespipelineservicets)).
+Quando arriva un `pipeline.step.completed` per `f3_step_6` con stato `completato` — ultimo step della sequenza lineare F2 — il subscriber popola atomicamente nello stesso `$set` Mongo un `pending_decision` di tipo `f2_to_f3_tema_selection` sulla ricerca. Le opzioni sono lette dall'output di `f2_step_5` verificato. La scrittura atomica garantisce che il polling del frontend, alla prima fetch dopo il completamento, veda contemporaneamente lo step `completato` e il banner di decisione (no race window).
+
+Vedi [Produzioni §3.1](../20-modules/sviluppo-bambino/produzioni.md#31-bridge-f2--f3-ad-ambiti-1n-tema--dispositivi) per il modello dati `tema_ambiti` e gli endpoint del bridge.
+
+> **Modificato in v3.0 (D7-pipeline-f3-redesign, 2026-05-06)**: nelle versioni precedenti il subscriber gestiva un override post-verifica di `f3_step_6b` (`applyOverrideStep6b` impostava `overrides_applied.step_6b_proxy = true`). Nel modello F3 ridotto a 5 step `f3_step_6b` non esiste più — il dispositivo è prodotto e finalizzato lungo `2 → 3 → 4` senza sostituzioni ex post. Il branch è stato rimosso.
 
 ### Watchdog
 

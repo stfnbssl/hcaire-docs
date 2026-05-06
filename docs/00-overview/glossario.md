@@ -38,15 +38,20 @@ Il verticale Sviluppo Bambino ha una terminologia molto specifica. La pagina [Pr
 | Termine | Significato |
 |---------|-------------|
 | **Fase 1 (F1)** | Fondazione ontologica del metodo. Corso pubblicato in `corso-fase1/`. |
-| **Fase 2 (F2)** | Traduzione interdisciplinare. Le **ricerche tematiche** producono temi candidati. 5 step (discovery, rilevanza, verifica, matrice, output family). |
-| **Fase 3 (F3)** | Costruzione del **dispositivo configurazionale** a partire da un tema. 10+1 step. |
-| **Ricerca** | Contenitore di temi candidati prodotti in F2. Vive sotto `pipeline/ricerche/<id>/`. |
-| **Tema** | Specializzazione di una ricerca, oggetto della F3. Vive sotto `pipeline/temi/<id>/`. |
-| **Dispositivo** | Output finale della F3: una struttura di lettura configurazionale. Snapshot canonico in `f3_step_9 → dispositivo-*-vN.json`. |
+| **Fase 2 (F2)** | Traduzione interdisciplinare. Le **ricerche tematiche** producono il passaporto di un tema. 7 step lineari (v3.0): rilevanza, verifica nodi, verifica, matrice, CE prototipica, output family, output-tipo vuoto. |
+| **Fase 3 (F3)** | Costruzione del **micro-dispositivo di campo** a partire dal passaporto del tema. 5 step lineari (v3.0): Nodo dominante e funzione, Micro-dispositivo, Stress test e correzione, Coerenza F3, Audit metodologico (opzionale). |
+| **Ricerca** | Contenitore della pipeline F2 di un tema. Vive sotto `pipeline/ricerche/<id>/`. |
+| **Tema (F3)** | Coppia `(theme_F2, ambito)` su cui gira una pipeline F3. Vive sotto `pipeline/temi/<id>/` con `<id> = ${theme}--${ambito}`. |
+| **Ambito** | Contesto operativo (clinico/educativo/formazione/politiche + sottodominio + età + setting + profilo osservatore) in cui un tema F2 viene applicato in F3. Un tema F2 può aprire *N* pipeline F3, una per ambito. |
+| **Bridge ambiti F2→F3** | Componente che, alla conclusione di F2, permette di definire e promuovere uno o più ambiti per il tema corrente. Embedded come `tema_ambiti` su `PipelineContext`. |
+| **Dispositivo** | Output finale della F3 (v3.0): struttura template a 7 campi del micro-dispositivo + classificazione U1–U6 + condizioni di non-applicabilità. Snapshot canonico in `f3_step_4` (verdetto coerenza) → `f3_step_3` (post-correzione) → `f3_step_2`. |
+| **Nodo dominante** | Nel modello v3.0: nodo della CE la cui fragilità o disorganizzazione condiziona maggiormente l'abitabilità del campo nel dominio scelto. Identificato in `f3_step_1`. |
+| **Funzione (F3)** | Una delle quattro categorie chiuse della metodologia: stabilizzare, ampliare, mediare, proteggere. Una funzione per dispositivo. |
 | **Asse strutturale** | Una delle dimensioni di lettura del modello. Pubblicato sotto `/assi-strutturali/`. |
-| **Proxy operativo** | Componente del dispositivo che traduce la lettura in osservazione concreta. |
-| **Stress test** | Verifica del dispositivo contro casi limite (`f3_step_10`). |
-| **Step 6b** | Variante stabilizzata del proxy: quando presente, **sovrascrive** il proxy del dispositivo originale. |
+| **Proxy operativo** | Componente del dispositivo che traduce la lettura in osservazione concreta. v3.0: proprietà del dispositivo prodotto in `f3_step_2`, niente più stratificazione 6/6b/6c. |
+| **Stress test** | Verifica del dispositivo contro 5 casi tipologici (assenza, parziale, distorta-chiudente, oscillante, apparente-indistinguibile) con eventuale correzione condizionale. Step `f3_step_3`. |
+| **Coerenza F3** | Checklist 10 controlli normativi del metodo che valida o respinge il dispositivo (`valido` / `richiede_revisione` / `fuori_modello`). Step `f3_step_4`. |
+| **Audit metodologico** | 8 controlli sulla qualità di esecuzione della pipeline F3 da parte degli agenti AI. Step opzionale `f3_step_5`. |
 | **Configurazionale** | Tipo di lettura del fenomeno per dimensioni e nodi (vs. inferenza psicologica). |
 | **Non classificabilità** | Casi in cui il proxy non può emettere giudizio (categoria distinta da "ambiguo"). |
 

@@ -7,6 +7,17 @@ sidebar_position: 2
 
 > **Stato**: documento di lavoro per allineare il backend al rifacimento UX `D5b-laboratorio-workbench.md` (cartella `claude-cowork/Sviluppo Bambino/input/produzioni/webapp-hcaire/specifiche/`). La spec D5b descrive solo il frontend; questo documento traduce le sue richieste in un piano di refactor concreto del server e del modello dati. Da rivedere e validare prima di iniziare l'implementazione.
 
+:::caution Documento parzialmente superato
+Questo documento è stato scritto prima del refactor **D7-pipeline-f3-redesign / pipeline v3.0** (2026-05-06). Diversi punti sono stati superati o realizzati con scelte differenti — vedi [Produzioni — Storia modifiche pipeline § v3.0](../20-modules/sviluppo-bambino/produzioni.md#pipeline-v30--2026-05-06) per il riferimento canonico.
+
+In particolare, sono **superati / non più applicabili**:
+- riferimenti a `f3_step_6/6b/6c/7/8/9/10` e a `f3_step_3_or_6c` (la pipeline F3 è stata ridotta a 5 step lineari);
+- il piano di mantenere `step7_context_selection` come decisione umana modale (la decisione è stata ritirata; l'ambito viene raccolto come input esterno di `f3_step_1`);
+- la rimozione "futura" di `f2_to_f3_tema_selection` (è stata invece **mantenuta** ma riformulata: ora dischiude il **bridge ambiti F2→F3** che gestisce la relazione 1→N tema/dispositivi).
+
+Restano valide e tuttora pertinenti le sezioni su: Archivio temi (§12), modello a tre entità (concettuale), endpoint di archivio, contesti `ricerca`. Da consultare con cautela e raffrontare con `produzioni.md` prima di agire.
+:::
+
 ## 0. Stato attuale (2026-05-05) — bridge transitorio attivo
 
 Una versione **bridge** del flusso "tema promosso → pipeline F2" è già attiva, in attesa del refactor completo descritto in questo documento.

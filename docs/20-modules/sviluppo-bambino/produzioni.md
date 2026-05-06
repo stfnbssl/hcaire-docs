@@ -53,46 +53,82 @@ Tutte le rotte sono definite in `client/src/App.tsx` e usano `react-router-dom`.
 
 Il metodo è organizzato in **due fasi** rappresentate nel codice come prefissi:
 
-### Fase 2 — Ricerche tematiche (7 step, pipeline v2.4)
+### Fase 2 — Ricerche tematiche (7 step, pipeline v3.0)
 | Step | Etichetta | File-prefix | Note |
 |---|---|---|---|
 | `f2_step_2` | Rilevanza | `theme-relevance-*.json` | Primo step lanciabile direttamente (post v2.2). Il tema arriva dall'Archivio via `scelta_tema` auto-popolato (no input form richiesto). |
-| `f2_step_2a` | Verifica nodi trasversali | `node-verification-*.json` | **v2.0** — mappa nodi candidati su N1–N7 canonici |
+| `f2_step_2a` | Verifica nodi trasversali | `node-verification-*.json` | Mappa nodi candidati su N1–N7 canonici. Skippabile (v2.4) |
 | `f2_step_3` | Verifica | `theme-verification-*.json` | |
 | `f2_step_4` | Matrice | `theme-matrix-*.json` | |
-| `f2_step_4b` | CE prototipica | `ce-prototipica-*.json` | **v2.0** — Grammatica CE (S, R, D, T, A) |
+| `f2_step_4b` | CE prototipica | `ce-prototipica-*.json` | Grammatica CE (S, R, D, T, A). Skippabile (v2.4); richiesto da step 5 (v2.5) |
 | `f2_step_5` | Output family | `output-family-*.json` | |
-| `f2_step_6` | Output-tipo vuoto | `output-tipo-vuoto-*.json` | **v2.0** — passaporto del tema, input primario di `f3_step_1` |
+| `f2_step_6` | Output-tipo vuoto | `output-tipo-vuoto-*.json` | Passaporto del tema, input primario della pipeline F3 |
 
-Una **ricerca** (`ricerche/<id>/`) ospita la pipeline F2 di un tema promosso dall'[Archivio temi](../../90-todo/laboratorio-d5b-backend.md#12-archivio-temi-q2--pagina-di-data-entry). La pipeline v2.0 (2026-05-04) aggiunge tre step di mediazione metodologica fra F2 e F3 (`2a`, `4b`, `6`); la v2.1 (2026-05-05) rimuove `f2_step_1` (discovery) la cui funzione è confluita nell'Archivio. Il primo step eseguibile è quindi `f2_step_2`, che riceve il tema scelto via `scelta_tema` (input esterno, popolato manualmente o copiato dall'Archivio).
+Una **ricerca** (`ricerche/<id>/`) ospita la pipeline F2 di un tema promosso dall'[Archivio temi](../../90-todo/laboratorio-d5b-backend.md#12-archivio-temi-q2--pagina-di-data-entry). La pipeline v2.0 (2026-05-04) aggiunge tre step di mediazione metodologica fra F2 e F3 (`2a`, `4b`, `6`); la v2.1 (2026-05-05) rimuove `f2_step_1` (discovery) la cui funzione è confluita nell'Archivio. Il primo step eseguibile è `f2_step_2`, che riceve il tema scelto via `scelta_tema` (input esterno auto-popolato dal bridge Archivio→Laboratorio). La sequenza è lineare e forzata: `2 → 2a → 3 → 4 → 4b → 5 → 6`. Solo `2a` e `4b` sono skippabili con motivazione.
 
-In v2.0 `f3_step_1` consuma sia `output-tipo-vuoto-v{N}.json` (primario, da `f2_step_6`) sia `output-family-v{N}.json` (secondario, da `f2_step_5`). Il path `output-tipo-vuoto` vive in `ricerche/<id>/`, non in `temi/<id>/`: la risoluzione cross-folder è trasparente perché `step_states` del tema eredita `output_file` dalla ricerca al passaggio F2→F3 (vedi `pipelineController.postRicercaDecision`).
+Quando `f2_step_6` raggiunge `completato`, `pipelineEventSubscriber.handleCompleted` scrive nello stesso `$set` Mongo un `pending_decision` di tipo `f2_to_f3_tema_selection` sulla ricerca: è il bridge **F2 → F3 ad ambiti** (vedi §3.1).
 
-### Fase 3 — Costruzione del dispositivo (10+1 step)
-| Step | Etichetta | File-prefix |
-|---|---|---|
-| `f3_step_1` | Lettura configurazionale | `lettura-configurazionale-*.json` |
-| `f3_step_2` | Stress test | `stress-test-*.json` |
-| `f3_step_3` | Correzione strutturale | `correzione-strutturale-*.json` |
-| `f3_step_4` | Indistinguibility test | `indistinguibility-test-*.json` |
-| `f3_step_5` | Audit | `audit-*.json` |
-| `f3_step_6` | Stabilizzazione proxy | `stabilizzazione-proxy-*.json` |
-| `f3_step_6b` | Stabilizzazione proxy (variante) | `stabilizzazione-proxy-*v?b.json` |
-| `f3_step_7` | Trasferibilità | `trasferibilità-*.json` |
-| `f3_step_8` | Adattamento strutturale | `adattamento-strutturale-*.json` |
-| `f3_step_9` | Dispositivo completo | `dispositivo-*.json` |
-| `f3_step_10` | Stress test dispositivo | `stress-test-dispositivo-*.json` (o equivalente) |
+#### 3.1 Bridge F2 → F3 ad ambiti (1→N tema → dispositivi)
 
-Un **tema** (`temi/<id>/`) può saltare alcuni step (registrato in `revisioni.md` con la sintassi `**Step-N saltato**: motivo`).
+A partire dalla pipeline v3.0 (D7), il completamento della F2 produce un **passaporto del tema** che può essere applicato a *N* ambiti operativi distinti. Ogni coppia `(tema, ambito)` apre una pipeline F3 indipendente.
 
-Lo step `6b` è una **variante stabilizzata** del proxy che, quando presente, **sovrascrive** il proxy del dispositivo originale (`f3_step_9`).
+**Modello dati** (embedded su `PipelineContext` di tipo `ricerca`):
 
-### Grafo delle dipendenze fra step (euristica usata in `DeviceLineage.tsx`)
+```ts
+tema_ambiti: Record<theme_id, TemaAmbito[]>
+
+TemaAmbito = {
+  ambito_id: string;          // slug kebab-case, unico per (ricerca, theme)
+  label: string;
+  data: {
+    target_domain: 'clinico' | 'educativo' | 'formazione' | 'politiche';
+    target_subdomain: string;
+    age_range: string;
+    setting: string;
+    observer_profile: string;
+    notes?: string;
+  };
+  created_at: Date;
+  created_by: string;
+  promoted_to_f3: boolean;
+  promoted_tema_id: string | null;   // tema F3 risultante: `${theme}--${ambito}`
+}
 ```
-f3_step_1 → f3_step_2 → f3_step_3 → {f3_step_4, f3_step_5} → f3_step_6 → f3_step_6b
-f3_step_3, f3_step_6b → f3_step_7 → f3_step_8
-f3_step_3, f3_step_6b, f3_step_7, f3_step_8 → f3_step_9 → f3_step_10
-```
+
+**Endpoint** (admin):
+- `GET    /api/pipeline/ricerche/:r/temi/:t/ambiti` — lista
+- `POST   /api/pipeline/ricerche/:r/temi/:t/ambiti` — crea
+- `PUT    /api/pipeline/ricerche/:r/temi/:t/ambiti/:a` — modifica (solo se non promosso)
+- `DELETE /api/pipeline/ricerche/:r/temi/:t/ambiti/:a` — elimina (solo se non promosso)
+- `POST   /api/pipeline/ricerche/:r/temi/:t/ambiti/:a/promote` — apre la pipeline F3
+- `POST   /api/pipeline/ricerche/:r/decisions/dismiss` — chiude esplicitamente il banner
+
+**Convenzione tema_id F3**: `${theme_slug}--${ambito_slug}` (separatore `--`). Esempio: `gioco-libero-come-incontro--clinico-neuropsviluppo`.
+
+**Pre-popolamento input step 1**: al `promote`, `pipelineController.promoteTemaAmbito` crea un `PipelineExternalInput` con `step_id: 'f3_step_1'`, `input_id: 'contesto_ambito'`, `data: ambito.data` e scrive il file `inputs/temi/{tema_id}/f3-step-1-contesto-ambito.json`. Il form di step 1 nascerà già compilato.
+
+**UI**: dialogo `HumanDecisionDialog` (variante `f2_to_f3_tema_selection`) — header read-only del tema F2 corrente, lista ambiti con CRUD inline + bottone "Apri pipeline F3 →"/"Vai al tema F3 →" per ciascuno, bottone "Concluso" per archiviare il banner. Il `pending_decision` resta visibile finché non viene esplicitamente dismissed: l'utente può tornare in qualsiasi momento per aggiungere altri ambiti.
+
+### Fase 3 — Costruzione del dispositivo (5 step, pipeline v3.0)
+
+A partire da v3.0 (D7-pipeline-f3-redesign, 2026-05-06) la pipeline F3 è stata ridotta da 11 step (1, 2, 3, 4, 5, 6, 6b, 6c, 7, 8, 9, 10) a 5 step lineari, allineati alla metodologia (`HCAIRE Slides/context/metodo/f3-strumenti-operativi.md`).
+
+| Step | Etichetta | File-prefix | Verifica | Skip | Note |
+|---|---|---|---|---|---|
+| `f3_step_1` | Nodo dominante e funzione | `nodo-funzione-*.json` | sì | no | Identifica nodo dominante della CE per il dominio scelto + sceglie 1 di 4 funzioni (stabilizzare/ampliare/mediare/proteggere). Input esterno obbligatorio `contesto_ambito` (auto-popolato dal bridge ambiti). |
+| `f3_step_2` | Micro-dispositivo di campo | `micro-dispositivo-*.json` | sì | no | Costruisce il dispositivo nel template a 7 campi della metodologia + classificazione U1–U6 + condizioni di non-applicabilità. |
+| `f3_step_3` | Stress test e correzione | `stress-test-*.json` | sì | no | 5 casi tipologici integrati (`assenza_configurazione`, `configurazione_parziale`, `configurazione_distorta_chiudente`, `configurazione_oscillante`, `configurazione_apparente_indistinguibile`) + correzione condizionale del dispositivo. Input esterno facoltativo `casi_dominio`. |
+| `f3_step_4` | Verifica di coerenza F3 | `coerenza-*.json` | no¹ | no | Checklist 10 controlli normativi → verdetto: `valido` / `richiede_revisione` / `fuori_modello`. |
+| `f3_step_5` | Audit metodologico | `audit-metodologico-*.json` | no | **sì** | 8 controlli sulla qualità di esecuzione della pipeline F3. Opzionale: il dispositivo è considerato finalizzato dopo step 4 verificato. |
+
+¹ Lo step 4 *è* la verifica della pipeline F3: non ha senso applicargli un altro layer di verifica.
+
+Un **tema** (`temi/<id>/`) corrisponde alla coppia `(theme_F2, ambito)` (vedi §3.1). La sequenza è lineare semplice — `1 → 2 → 3 → 4 → 5` — senza biforcazioni né virtual ref. Solo `f3_step_5` è skippabile.
+
+**Cosa è scomparso da v2.x → v3.0**:
+- gli step di trasferimento (vecchi 7-9: trasferibilità, adattamento strutturale, dispositivo completo) — un tema applicato a un nuovo ambito è semplicemente una nuova pipeline F3 con dominio diverso, non un trasferimento;
+- la stratificazione del proxy (vecchi 6, 6b, 6c) — il proxy operativo è ora una proprietà del dispositivo prodotto in `f3_step_2`;
+- la decisione umana modale `step7_context_selection` — l'ambito è raccolto come input esterno di `f3_step_1`, niente più dialog modali nel mezzo della pipeline.
 
 ---
 
@@ -104,29 +140,28 @@ Tutti i dati consumati dal frontend sono **file statici** serviti da `client/pub
 client/public/pipeline/
 ├── pipeline-index.json                     # indice globale generato dallo script di sync
 ├── ricerche/
-│   └── <ricerca-id>/
-│       ├── theme-discovery-vN.json         # f2_step_1
+│   └── <ricerca-id>/                       # F2 (post v2.1: niente più theme-discovery)
 │       ├── theme-relevance-vN.json         # f2_step_2
+│       ├── node-verification-vN.json       # f2_step_2a
 │       ├── theme-verification-vN.json      # f2_step_3
 │       ├── theme-matrix-vN.json            # f2_step_4
-│       └── output-family-vN.json           # f2_step_5
+│       ├── ce-prototipica-vN.json          # f2_step_4b
+│       ├── output-family-vN.json           # f2_step_5
+│       └── output-tipo-vuoto-vN.json       # f2_step_6 (passaporto del tema)
 ├── temi/
-│   └── <tema-id>/
-│       ├── lettura-configurazionale-vN.json
-│       ├── stress-test-vN.json
-│       ├── correzione-strutturale-vN.json
-│       ├── indistinguibility-test-vN.json
-│       ├── audit-vN.json
-│       ├── stabilizzazione-proxy-vN.json     # f3_step_6
-│       ├── stabilizzazione-proxy-vNb.json    # f3_step_6b
-│       ├── trasferibilità-vN.json
-│       ├── adattamento-strutturale-vN.json
-│       ├── dispositivo-*-vN.json             # f3_step_9
-│       ├── stress-test-*-vN.json             # f3_step_10
-│       └── revisioni.md                      # storia decisionale, opzionale
+│   └── <tema-id>/                          # F3 v3.0 — `<tema-id>` = `${theme}--${ambito}`
+│       ├── nodo-funzione-vN.json           # f3_step_1
+│       ├── micro-dispositivo-vN.json       # f3_step_2
+│       ├── stress-test-vN.json             # f3_step_3
+│       ├── coerenza-vN.json                # f3_step_4
+│       ├── audit-metodologico-vN.json      # f3_step_5 (opzionale)
+│       └── revisioni.md                     # storia decisionale, opzionale
 └── inputs/temi/<tema-id>/
-    └── f3-step-N-<label>.json                # input esterni forniti dal ricercatore
+    ├── f3-step-1-contesto-ambito.json      # auto-popolato dal bridge ambiti
+    └── f3-step-3-casi-dominio.json         # facoltativo, fornito dal ricercatore
 ```
+
+**Cartelle output legacy (pre-v3.0)** non sono più popolate ma possono ancora essere presenti su filesystem per esecuzioni storiche: `lettura-configurazionale-*`, `correzione-strutturale-*`, `indistinguibility-test-*`, `stabilizzazione-proxy-*`, `trasferibilità-*`, `adattamento-strutturale-*`, `dispositivo-*`, `stress-test-dispositivo-*`. Il sync e il mapper le ignorano nel nuovo flusso; possono essere rimosse o archiviate.
 
 ### `pipeline-index.json` (root del catalogo)
 
@@ -274,18 +309,18 @@ Tutti i fetch sono `GET` di file statici sotto `/pipeline/`. Nessun side-effect,
 | Funzione | Ritorna | Note |
 |---|---|---|
 | `fetchPipelineIndex()` | `PipelineIndex` | Carica l'indice globale |
-| `fetchDevice(tema)` | `DeviceSnapshot \| null` | Carica il `canonical_device` (step 9, fallback step 3, fallback step 1) e applica l'override di step 6b se presente |
-| `fetchStressTest(tema)` | `F3Step10Raw \| null` | Carica step 10 |
-| `fetchCorrectionsLog(tema)` | `Array<{step, entries}>` | Aggrega `corrections_log` da step 3, 6, 8 |
+| `fetchDevice(tema)` | `DeviceSnapshot \| null` | Carica il `canonical_device`. Priorità v3.0: `f3_step_4` (verdetto coerenza) → `f3_step_3` (dispositivo post-correzione) → `f3_step_2` (micro-dispositivo iniziale) |
+| `fetchStressTest(tema)` | `F3Step10Raw \| null` | Carica `f3_step_3` (vecchio `f3_step_10` rimosso). Lo schema dell'output v3.0 è ridisegnato; i viewer storici possono mostrare dati malformati e andranno aggiornati. |
+| `fetchCorrectionsLog(tema)` | `Array<{step, entries}>` | Aggrega `corrections_log` solo da `f3_step_3` (unico step v3.0 che produce correzioni) |
 | `fetchRevisioni(tema)` | `string \| null` | Testo markdown grezzo |
 | `fetchExternalInput(path)` | `unknown` | Generico, per file in `inputs/` |
 
-La funzione `extractDevice()` normalizza tre **shape** diverse al modello `DeviceSnapshot`:
-- `'device'` (step 9): la chiave è `device`.
-- `'corrected_device'` (step 3 fallback): la chiave è `corrected_device`.
-- `'result_0'` (step 1 fallback): la chiave è `results[0]`, con `operative_proxy` (singolare) → `operative_proxies` (array).
+La funzione `extractDevice()` normalizza tre **shape** al modello `DeviceSnapshot`:
+- `'device'` (`f3_step_4` — coerenza): contiene il dispositivo finalizzato dopo verifica.
+- `'corrected_device'` (`f3_step_3` — stress test e correzione): contiene il dispositivo dopo l'eventuale correzione condizionale.
+- `'result_0'` (`f3_step_2` — micro-dispositivo iniziale): è la prima forma del dispositivo, prima dello stress test.
 
-L'override di step 6b sostituisce `operative_proxies`, e — se forniti — `observability_requirements` (anche sotto la chiave `required_observations`) e `non_classifiability_rules`.
+In v3.0 (D7) **non c'è più override post-step**: il dispositivo è prodotto e finalizzato lungo `2 → 3 → 4` senza sostituzioni ex post (vecchio meccanismo `applyStep6bOverride` rimosso).
 
 ---
 
@@ -328,9 +363,11 @@ Solo testo statico: cos'è una produzione, le 3 fasi del processo produttivo, li
 - **Nota**: questa pagina **non** legge da `pipeline-index.json` ed è disaccoppiata dalle ricerche F2 dell'indice (è un punto di possibile riallineamento futuro).
 
 ### 7.3 Mappa pipeline — `SviluppoBambinoPipelineMap.tsx`
-- Due colonne: ricerche F2 (sky) e temi F3 (emerald).
-- Per ciascuna entry: barra di avanzamento step (segmenti pieni = completato), conteggio `n/totale`, badge `robustezza`, badge `deriva da <tema>`.
-- Click sul tema → overview.
+- Layout **master-detail** in due colonne (riprogettato 2026-05-06):
+  - **Sinistra**: ricerche F2 in righe compatte (~32px) — pallino di stato + label + contatore `n/7`. Click → seleziona la ricerca.
+  - **Destra**: ambiti del tema della ricerca selezionata (relazione 1→N). Per ogni ambito: label, dominio · sottodominio · età · setting, progress bar dei 5 step F3, link "Apri pipeline F3 →" (per ambiti non promossi) o "Vai al tema F3 →" (promossi). Sezione "Temi legacy" in fondo per i temi creati col vecchio bridge senza ambito.
+- All'avvio auto-seleziona la prima ricerca per non lasciare il pannello destro vuoto.
+- Il context completo della ricerca selezionata (con `tema_ambiti` embedded) viene fetchato via `pipelineOrchestratorService.getRicerca` (l'index pubblico non lo include perché è dato runtime DB).
 
 ### 7.4 Overview tema — `SviluppoBambinoPipelineDeviceOverview.tsx`
 - Tab: **Panoramica** (accesso rapido a Dispositivo/Stress test + lineage), **Provenienza** (lineage esteso), **Correzioni**, **Storia**.
@@ -360,12 +397,12 @@ Solo testo statico: cos'è una produzione, le 3 fasi del processo produttivo, li
 - Footer con valutazione globale: punti di forza, debolezze, correzioni richieste; badge robustezza nel header.
 
 ### 7.7 `DeviceLineage.tsx`
-- Lista verticale degli step F3 di interesse (presenti o saltati).
-- Ogni step espandibile mostra: **input pipeline** (con file di provenienza), **input esterni forniti dal ricercatore** (badge tipizzato), **dispositivo sorgente** (per step 7 quando il tema è una specializzazione), **output prodotto** (filename).
-- Box "Origine" in alto: ricerca F2 e/o dispositivo sorgente.
+- Lista verticale dei 5 step F3 di interesse (presenti o saltati). v3.0: dipendenza lineare `1 → 2 → 3 → {2,3} → 4 → 5`.
+- Ogni step espandibile mostra: **input pipeline** (con file di provenienza), **input esterni forniti dal ricercatore** (badge tipizzato), **output prodotto** (filename).
+- Box "Origine" in alto: ricerca F2 e/o dispositivo sorgente (campo legacy ancora popolabile sul context, non più consumato dalla pipeline v3.0).
 
 ### 7.8 `CorrectionsLog.tsx`
-Per ciascuna entry di `corrections_log` (step 3/6/8):
+Per ciascuna entry di `corrections_log` (v3.0: solo `f3_step_3`):
 - box rosso "Frattura" (riferimento + summary + scope),
 - freccia + tipo correzione,
 - box correzione (verde se applicata, slate altrimenti),
@@ -378,36 +415,36 @@ Supporta highlight di un `breaking_point_ref` specifico via prop.
 
 ---
 
-## 8. Cosa **manca** per gestire l'esecuzione delle produzioni
+## 8. Cosa è ancora aperto
 
-Indice ragionato dei vincoli architetturali oggi presenti, utile a Cowork per progettare l'estensione.
+La sezione era originariamente un elenco dei vincoli architetturali per progettare l'estensione di esecuzione delle produzioni. La maggior parte è stata risolta nei round D2-D7. Restano alcuni punti aperti.
 
-### 8.1 Sull'origine dei dati
-- **Tutti i dati sono statici** sotto `client/public/pipeline/`. Non esistono endpoint sul server Express che parlino di pipeline.
-- Lo script `sync-pipeline.mjs` legge da una cartella locale dell'utente sviluppatore (`C:/Users/nnmrd/Documents/Claude/Projects/Sviluppo Bambino/...`). Per esecuzione server-side servirà spostare la sorgente di verità in un luogo accessibile al backend (filesystem del server, MongoDB, object storage), o introdurre una pipeline di ingestion.
+### 8.1 Schemi JSON non validati lato sito
+Gli **schemi JSON di ciascuno step** sono noti come `*-schema.json` nelle cartelle di Cowork (`input/produzioni/f{2,3}-step-*-*/`) e usati lì come direttiva agli agenti. Lato webapp, le interfacce TypeScript in `client/src/types/pipeline.ts` descrivono il subset consumato dai viewer, ma non c'è validazione runtime (zod, ajv) sui dati prodotti dagli step. Per ora sufficiente; quando i viewer specifici verranno introdotti (vedi 8.2) sarà naturale aggiungere la validazione.
 
-### 8.2 Sui contratti
-- Gli **schemi JSON di ciascuno step** sono noti **lato lettura** ma **non sono validati** (nessun JSON Schema esplicito, nessun `zod`, ecc.). Le interfacce TypeScript in `types/pipeline.ts` descrivono solo il subset osservato.
-- Il riconoscimento per file usa **prefisso del filename + versione `-vN[b].json`**: il sync rinomina nulla, ma la convenzione è critica e attualmente "tribale". Per esecuzioni programmatiche andrà esplicitata.
+### 8.2 Viewer specifici per gli step F3 v3.0
+I componenti di preview per gli output dei nuovi step F3 non sono ancora stati implementati (D7 §5.4 li lista come *tappa successiva*):
 
-### 8.3 Sul flusso fra step
-- La dipendenza fra step è **euristica** (vedi `inferPipelineInputs` in `DeviceLineage.tsx`). Per eseguire serve un grafo dichiarativo (per ogni step: input pipeline obbligatori, input esterni obbligatori/opzionali, output prodotto).
-- Lo step 6b è gestito come **override** di step 9: la convenzione va resa esplicita nel motore di esecuzione.
+| Step | Componente di preview suggerito | Stato |
+|---|---|---|
+| `f3_step_1` (Nodo + funzione) | JSON pretty-printed | fallback OK |
+| `f3_step_2` (Micro-dispositivo) | `MicroDispositivoViewer` (template a 7 campi + U1–U6 + non_applicability) | da implementare |
+| `f3_step_3` (Stress test e correzione) | `StressTestDashboard` riconfigurato sui 5 nuovi `case_type` | da rivedere — il vecchio renderer assume lo schema di vecchio `f3_step_10` |
+| `f3_step_4` (Coerenza F3) | `CoerenzaChecklistViewer` (10 controlli + critici falliti in evidenza) | da implementare |
+| `f3_step_5` (Audit metodologico) | `AuditViewer` (8 controlli + esito globale) | da implementare |
 
-### 8.4 Sulle azioni di esecuzione
-Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codice:
-- **Stato runtime di un'esecuzione** (queued / running / failed / done) per coppia `(tema_id, step)`.
-- **Trigger** di esecuzione (chi/come avvia uno step). Il sito ha già autenticazione Clerk con ruolo `admin` (vedi `AdminRoute` in `App.tsx`) — naturale candidato per gating.
-- **Storage degli artefatti generati** durante l'esecuzione (oggi il filesystem è scritto fuori dal sito).
-- **Log/streaming dell'output** dello step in esecuzione.
-- **Versionamento** esplicito (oggi catturato solo dal suffisso `-vN[b]` del filename). Per ri-esecuzioni controllate serve una nozione di run/version distinta dal naming.
-- **Validazione post-step** (la pipeline produce `validation_structural_check`: serve normarla come esito macchina, non solo come blob da mostrare).
+Per la prima implementazione si accetta il fallback "JSON pretty-printed" su tutti.
 
-### 8.5 Sugli input esterni
-- Gli `external_inputs` di tipo `esterno_obbligatorio` (es. step 7 per `pointing` → `f3-step-7-contesto-clinico.json`) presuppongono che **un essere umano** prepari il file prima dell'esecuzione. La sezione di esecuzione dovrà offrire una **UI di compilazione/upload** per quegli input, possibilmente guidata dallo schema atteso dello step.
+### 8.3 Renderer input esterni rinominati
+I renderer esterni si trovano inline in `client/src/components/pipeline/orchestration/ExternalInputForm.tsx`. Con v3.0:
+- il vecchio `F3Step7InputRenderer` (form contesto/ambito) andrà rinominato semanticamente in `F3Step1InputRenderer` (lo step di destinazione è cambiato) — già allineato logicamente perché il form si attiva su `stepId === 'f3_step_7'` ma quella cartella di config non esiste più. Da fare al primo refactor.
+- il vecchio `F3Step10InputRenderer` (5 casi stress test) andrà rinominato in `F3Step3InputRenderer` con i nuovi `case_type`.
 
-### 8.6 Riallineamento `Temi page` ↔ pipeline
-- `SviluppoBambinoProduzioniTemiPage` consuma un **JSON statico locale** (`client/src/data/theme-discovery-v1.json`) duplicato rispetto a quanto presente in `pipeline/ricerche/.../theme-discovery-v1.json`. Per coerenza, in fase di estensione conviene unificare le sorgenti.
+### 8.4 Pulizia output legacy su filesystem
+Le esecuzioni F3 precedenti a v3.0 sono **prove tecniche da abbandonare** (decisione del ricercatore, D7 §1.1). Possono essere cancellate o spostate in `output/produzioni/temi/_archivio-prove-tecniche-pre-r3/`. La rimozione delle 10 cartelle di prompt vecchie in `input/produzioni/f3-step-*` (vedi D7 §3.1) va fatta manualmente.
+
+### 8.5 Riallineamento `Temi page` ↔ pipeline
+`SviluppoBambinoProduzioniTemiPage` consuma un **JSON statico locale** (`client/src/data/theme-discovery-v1.json`) duplicato rispetto al modello "Archivio temi". Per coerenza conviene unificare le sorgenti — task ereditato da v2.x, ancora aperto.
 
 ---
 
@@ -424,6 +461,57 @@ Una sezione di esecuzione ha bisogno di concetti che oggi non esistono nel codic
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v3.0 — 2026-05-06
+
+**Refactoring metodologico della pipeline F3** (D7-pipeline-f3-redesign): da 11 step (1, 2, 3, 4, 5, 6, 6b, 6c, 7, 8, 9, 10) a **5 step lineari**: Nodo+Funzione, Micro-dispositivo, Stress test e correzione, Coerenza F3, Audit metodologico (opz.).
+
+**Motivazione**: il confronto con la metodologia (`f3-strumenti-operativi.md`) ha evidenziato (a) sproporzione dimensionale, (b) assenza dei passaggi metodologici espliciti (nodo dominante, 4 funzioni), (c) stratificazioni di controllo non previste (3 stress test, audit di un audit, frammentazione del proxy, 4 step per "trasferimento" tra temi). v3.0 ricuce la pipeline al modello effettivo.
+
+**Cambiamenti strutturali**:
+- Sequenza F3 lineare: `1 → 2 → 3 → 4 → 5`. Niente più virtual ref `f3_step_3_or_6c`, niente più varianti `inputs_pipeline_skip_8`, niente più override post-verifica di `f3_step_6b`.
+- Step di trasferimento (vecchi 7-9) abbandonati: nuovo ambito = nuova pipeline F3 indipendente, gestita dal **bridge ambiti** (vedi §3.1).
+- Decisione modale `step7_context_selection` rimossa: l'ambito è raccolto come input esterno obbligatorio di `f3_step_1`, auto-popolato dal bridge.
+- `f2_step_6.blocks` ora punta direttamente a `f3_step_1` (niente più `[human_decision] →`).
+- Entità con cartelle/schemi nuovi in Cowork: `f3-step-{1-nodo-funzione, 2-micro-dispositivo, 3-stress-test, 4-coerenza, 5-audit-metodologico}/`. Le vecchie cartelle vanno rimosse manualmente.
+
+**Bridge F2→F3 ad ambiti** (componente nuovo, costruito appositamente per v3.0):
+- `PipelineContext.tema_ambiti: Record<theme_id, TemaAmbito[]>` — embedded sui contesti `ricerca`.
+- 5 endpoint CRUD + 1 di promote (`POST /api/pipeline/ricerche/:r/temi/:t/ambiti/:a/promote`) + 1 di dismiss.
+- Convenzione `tema_id F3 = ${theme}--${ambito}`.
+- Pre-popolamento `PipelineExternalInput` di `f3_step_1` al promote, cosicché lo step parta col form contesto/ambito già compilato.
+
+**Codice modificato**:
+
+| File | Modifica |
+|---|---|
+| `server/pipeline-step-config.json` | v3.0: rimosse 11 entry F3 vecchie, aggiunte 5; `f2_step_6.blocks` aggiornato |
+| `server/src/services/stepEnablement.ts` | Rimosse `pickPipelineInputs` con biforcazione step 9, `resolveVirtualStepRef`, `DECISION_BLOCKS_STEP`; `HumanDecisionType` ora `never` |
+| `server/src/controllers/pipelineController.ts` | Rimossa logica f3_step_9 standard/skip-8 e f3_step_3_or_6c in `buildExecutionPlan` e in rollback. `promoteTemaAmbito` ora pre-popola `f3_step_1`. `postTemaDecision` deprecato (HTTP 410). Trigger `step7_context_selection` rimosso |
+| `server/src/services/pipelineEventSubscriber.ts` | Rimossa `applyOverrideStep6b` |
+| `server/src/services/pipelineMappers.ts` | `pickCanonicalDevice` mappa `f3_step_4 → f3_step_3 → f3_step_2` |
+| `local/src/pipeline/constants.ts` | `STEP_FOLDER_MAP` con i 5 nuovi nomi cartella; `STEP_CLAUDE_FILE_MAP` svuotato |
+| `local/src/pipeline/PromptComposer.ts` | Rimossa gestione speciale MICRO CASI di `f3_step_10` |
+| `client/src/types/pipeline.ts` | `PipelineStepId` ridotto |
+| `client/src/services/pipelineService.ts` | `shapeToStepId` riallineato; `fetchStressTest` legge da `f3_step_3`; `fetchCorrectionsLog` legge solo da `f3_step_3`; rimosso `applyStep6bOverride` |
+| `client/src/pages/.../SviluppoBambinoPipelineMap.tsx` | F3_STEPS a 5; layout master-detail (vedi §7.3) |
+| `client/src/components/pipeline/DeviceLineage.tsx` | F3_STEP_ORDER a 5; `inferPipelineInputs` lineare |
+
+**Migrazione dati**: `scripts/migrate-f3-step-input-rename.mjs` rinomina `step_id: f3_step_7 → f3_step_1` per i `PipelineExternalInput contesto_ambito` dei temi promossi col vecchio bridge. Idempotente, supporta `--dry-run` e `--context X`.
+
+**Esecuzioni precedenti**: i temi F3 pre-v3.0 sono prove tecniche; gli output JSON in `output/produzioni/temi/...` possono essere cancellati o spostati in `_archivio-prove-tecniche-pre-r3/`. Nessuna conversione di dati storici è richiesta.
+
+**Caveat operativi**:
+- riavviare il server Express dopo la modifica del config (`nodemon` non watcha `pipeline-step-config.json`);
+- rimuovere manualmente le 10 cartelle vecchie F3 in `claude-cowork/.../input/produzioni/`.
+
+### Pipeline v2.6 — 2026-05-06
+
+Rimosso `tema_selezionato` da `inputs_esterni` di `f3_step_1`. Dopo l'introduzione del bridge F2→F3 ad ambiti (1→N), `tema_id`, `label` e `ricerca_origine` sono già disponibili sul context tema e derivabili dall'input pipeline `f2_step_6` (passaporto). Lo step parte ora senza richiesta input al ricercatore (a parte `contesto_ambito` introdotto poi in v3.0).
+
+### Pipeline v2.5 — 2026-05-06
+
+Aggiunta `f2_step_4b` come dipendenza `required` di `f2_step_5`. Era assente in v2.3 (la sequenza lineare `2 → 2a → 3 → 4 → 4b → 5 → 6` era infranta perché `f2_step_5` dipendeva solo da step 3 e 4 e diventava lanciabile prima che lo step opzionale 4b fosse eseguito o saltato). **Regola generale**: ogni step che segue uno step opzionale deve attendere che il predecessore sia in stato `completato` o `saltato`.
 
 ### Pipeline v2.4 — 2026-05-05
 

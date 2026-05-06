@@ -82,7 +82,7 @@ Tre sono confermati nel codice. Oltre a questi, il worker gestisce anche Bartleb
 | **Input → Cowork** | Prompt composto da `PromptComposer`; risoluzione path locale per input pipeline (`STEPS_ROOT`, `INPUTS_ROOT`); espansione speciale di `assi-strutturali.json` nei 6 file `asse_1..6.json` precompilati |
 | **Output** | Cowork scrive JSON in `OUTPUT_ROOT/<output_dir>/<output_filename>`. Il server lo legge, lo embedda in `PipelineStepExecution.output_data` e lo copia in `client/public/pipeline/` |
 | **Eventi indietro** | Protocollo `pipeline.step.*` su `hcaire:pipeline:events` |
-| **Step coperti** | F2: `f2_step_1` ... `f2_step_5`. F3: `f3_step_1` ... `f3_step_10`, con varianti `f3_step_6b`/`6c` |
+| **Step coperti** | F2 (v2.x, 7 step): `f2_step_2`, `2a`, `3`, `4`, `4b`, `5`, `6` (`f2_step_1` rimosso, ora gestito dall'Archivio temi). F3 (v3.0 / D7, 5 step lineari): `f3_step_1` Nodo+Funzione, `f3_step_2` Micro-dispositivo, `f3_step_3` Stress test e correzione, `f3_step_4` Coerenza F3, `f3_step_5` Audit metodologico (opz.) |
 
 **Specificità non presenti nelle letture:**
 
