@@ -6,7 +6,9 @@ sidebar_position: 2
 
 # Modulo Sviluppo Bambino — narrativa
 
-Scheda funzionale dell'**impalcatura narrativa del verticale Sviluppo Bambino**: pagine espositive del metodo, modello, assi strutturali, fasi, interlocuzioni, riflessioni. Tutte le sotto-aree **non** legate alla pipeline di produzione (per quelle vedi [Produzioni](./produzioni.md)) e **non** ai corsi (vedi [Corsi F1/F2](./corsi-f1-f2.md)).
+Scheda funzionale dell'**impalcatura narrativa del verticale Sviluppo Bambino**: pagine espositive del metodo, modello, fasi, interlocuzioni, riflessioni. Tutte le sotto-aree **non** legate alla pipeline di produzione (per quelle vedi [Produzioni](./produzioni.md)) e **non** ai corsi (vedi [Corsi F1/F2](./corsi-f1-f2.md)).
+
+> Gli **assi strutturali**, originariamente sotto-area di Sviluppo Bambino, sono stati elevati a **sezione principale del sito** (route `/assi-strutturali/*`) perché trattano lo sviluppo umano in generale, di cui lo sviluppo del bambino è solo uno dei domini. Vedi [Assi strutturali](../assi-strutturali.md) per la scheda dedicata.
 
 ## 1. Scopo
 
@@ -31,9 +33,8 @@ Esporre al lettore pubblico la teoria, il metodo e il modello del verticale "Svi
 | Riflessioni | `/sviluppo-bambino/riflessioni` | `GET /api/sviluppo-bambino/riflessioni` |
 | Interlocuzioni (landing) | `/sviluppo-bambino/interlocuzioni` | `GET /api/sviluppo-bambino/interlocuzioni` |
 | Interlocuzioni — disciplina | `/sviluppo-bambino/interlocuzioni/discipline/:disciplinaSlug` | `GET /api/sviluppo-bambino/interlocuzioni/:disciplinaSlug` |
-| Assi Strutturali (top-level) | `/assi-strutturali`, `/assi-strutturali/capitoli`, `/assi-strutturali/:asseSlug`, `/assi-strutturali/:asseSlug/:chapterSlug` | `GET /api/sviluppo-bambino/assi`, `/assi/:asseSlug`, `/assi/:asseSlug/:chapterSlug` |
 
-Le route `/sviluppo-bambino/assi/*` esistono come **redirect storici** verso `/assi-strutturali/*` (vedi [Architettura → Routing §2](../../10-architecture/routing.md#redirect-storici-da-sviluppo-bambinoassi)).
+Gli **assi strutturali** (`/assi-strutturali/*`) sono ora una **sezione principale del sito** e hanno una scheda dedicata: vedi [Assi strutturali](../assi-strutturali.md).
 
 ## 3. Sorgenti dati
 
@@ -67,12 +68,8 @@ L'assenza di `CONTENT_BASE_PATH` o di file specifici si traduce in `<StubNotice>
 | `pages/sviluppo-bambino/SviluppoBambinoMetodoPage.tsx` | Pagine di metodo (introduzione, ricerca-scientifica, rapporto-con-ia) |
 | `pages/sviluppo-bambino/SviluppoBambinoMetodoFasiIndex.tsx` | Index fasi |
 | `pages/sviluppo-bambino/SviluppoBambinoMetodoFasePage.tsx` | Singola fase |
-| `pages/sviluppo-bambino/SviluppoBambinoModello.tsx` | Modello |
-| `pages/sviluppo-bambino/SviluppoBambinoAsseOverview.tsx` | Overview asse (sotto modello) |
-| `pages/sviluppo-bambino/SviluppoBambinoAssiLanding.tsx` | Landing assi top-level (`/assi-strutturali`) |
-| `pages/sviluppo-bambino/SviluppoBambinoAssi.tsx` | Lista capitoli (`/assi-strutturali/capitoli`) |
-| `pages/sviluppo-bambino/SviluppoBambinoAsseChapters.tsx` | Capitoli per asse |
-| `pages/sviluppo-bambino/SviluppoBambinoChapter.tsx` | Singolo capitolo |
+| `pages/sviluppo-bambino/SviluppoBambinoModello.tsx` | Modello (panoramica del progetto) |
+| `pages/sviluppo-bambino/SviluppoBambinoAsseOverview.tsx` | Sintesi asse del progetto (sotto `/sviluppo-bambino/modello/:asseSlug`) |
 | `pages/sviluppo-bambino/SviluppoBambinoInterlocuzioniLanding.tsx` | Landing interlocuzioni |
 | `pages/sviluppo-bambino/SviluppoBambinoInterlocuzioniDisciplineIndex.tsx` | Index discipline |
 | `pages/sviluppo-bambino/SviluppoBambinoInterlocuzioniDisciplinaPage.tsx` | Singola disciplina |
@@ -80,7 +77,8 @@ L'assenza di `CONTENT_BASE_PATH` o di file specifici si traduce in `<StubNotice>
 | `components/SviluppoBambinoNav.tsx` | Sotto-nav verticale |
 | `components/SviluppoBambinoMetodoNav.tsx` | Sotto-nav metodo |
 | `components/SviluppoBambinoInterlocuzioniNav.tsx` | Sotto-nav interlocuzioni |
-| `components/AssiStrutturaliNav.tsx` | Sotto-nav assi |
+
+I file delle pagine assi (4 componenti React + nav) vivono ora in `pages/assi-strutturali/` (vedi [scheda dedicata](../assi-strutturali.md)).
 
 ## 5. Pattern ricorrente
 
@@ -102,14 +100,11 @@ Le sotto-nav (`SviluppoBambinoNav`, `SviluppoBambinoMetodoNav`, ecc.) sono rende
 
 ## 6. Sezioni speciali
 
-### 6.1 Modello + Assi
+### 6.1 Modello — sintesi degli assi
 
-Il modello consta di **6 assi strutturali** (es. `corporeita`, `campo`, `co-regolazione`, `mediazione-simbolica`, `passaggio-trasformativo`, ...). Ognuno ha:
+`/sviluppo-bambino/modello` espone la panoramica del modello del progetto. Per ciascuno dei 6 assi strutturali (`asse-1-ontologico-fenomenologico`, `asse-2-affettivo-morale`, `asse-3-normativo-educativo`, `asse-4-separazione-limite`, `asse-5-desiderio`, `asse-6-storico-culturale`) `/sviluppo-bambino/modello/:asseSlug` mostra una **sintesi dell'asse** scritta dal punto di vista del progetto.
 
-- **Overview** sotto `/sviluppo-bambino/modello/:asseSlug` (compendio dell'asse).
-- **Capitoli** sotto `/assi-strutturali/:asseSlug/:chapterSlug` (dettagli, casi).
-
-I capitoli sono letti via `readChaptersInDir` ordinati per frontmatter `chapter` o `order`. Vedi `staticContentReader.ts:120` (`readChaptersInDir`).
+I **capitoli completi** degli assi non vivono più qui: sono nella sezione principale [Assi strutturali](../assi-strutturali.md) (route `/assi-strutturali/:asseSlug/:chapterSlug`). I capitoli sono letti via `readChaptersInDir` ordinati per frontmatter `chapter` o `order` (vedi `staticContentReader.ts`).
 
 ### 6.2 Interlocuzioni
 
@@ -152,6 +147,5 @@ Per chiarezza:
 
 Niente test automatici. Verifiche manuali:
 
-- Caricamento di tutte le 18 pagine narrative principali con `CONTENT_BASE_PATH` corretto.
+- Caricamento delle pagine narrative principali con `CONTENT_BASE_PATH` corretto.
 - Comportamento con env mancante: tutte mostrano StubNotice senza errori.
-- Redirect `/sviluppo-bambino/assi/*` → `/assi-strutturali/*` mantengono i parametri.

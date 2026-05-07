@@ -225,7 +225,7 @@ Niente script di migrazione. I dati esistenti sono test cancellabili.
 Lo step `f2_step_1` esce dalla pipeline UI ma il suo output (file `theme-discovery-v{N}.json` con lista candidati) **resta riusabile**:
 
 - All'avvio dell'Archivio (futuro), si può fornire una funzione "Importa candidati da output step 1": l'admin punta a un file `theme-discovery-v1.json` (presente in `client/public/pipeline/ricerche/.../`), il sistema crea N record `temi` in stato `bozza` con metadati popolati dai campi `theme_id`, `theme_label`, `description`, ecc.
-- Anche lo static `client/src/data/theme-discovery-v1.json` (oggi consumato da `SviluppoBambinoProduzioniTemiPage`) può essere bootstrap iniziale dell'Archivio. Vedi anche [Produzioni §8.6](../20-modules/sviluppo-bambino/produzioni.md#86-riallineamento-temi-page--pipeline) (riallineamento `Temi page`↔pipeline noto come critico).
+- Anche lo static `client/src/data/theme-discovery-v1.json` (oggi consumato da `SviluppoBambinoProduzioniTemiPage`) può essere bootstrap iniziale dell'Archivio. Vedi anche [Produzioni §8.5](../20-modules/sviluppo-bambino/produzioni.md#85-riallineamento-temi-page--pipeline) (riallineamento `Temi page`↔pipeline noto come critico).
 
 ## 5. Mappa del refactor: codice server
 
@@ -552,7 +552,7 @@ Sovrapposizione voluta: i temi `promosso`/`parcheggiato`/`archiviato` sono visib
 
 Per popolare l'Archivio al primo avvio, due fonti già esistenti:
 
-1. **Static `client/src/data/theme-discovery-v1.json`** — 10 temi candidati hardcoded usati oggi da `SviluppoBambinoProduzioniTemiPage`. Possono essere importati in `temi` con stato `maturo`. Vedi anche [Produzioni §8.6](../20-modules/sviluppo-bambino/produzioni.md#86-riallineamento-temi-page--pipeline) (riallineamento già notato come necessario).
+1. **Static `client/src/data/theme-discovery-v1.json`** — 10 temi candidati hardcoded usati oggi da `SviluppoBambinoProduzioniTemiPage`. Possono essere importati in `temi` con stato `maturo`. Vedi anche [Produzioni §8.5](../20-modules/sviluppo-bambino/produzioni.md#85-riallineamento-temi-page--pipeline) (riallineamento già notato come necessario).
 2. **Output passati di `f2_step_1`** — i file `theme-discovery-v{N}.json` sotto `client/public/pipeline/ricerche/.../`. Importabili come `bozza` per evidenziare che sono candidati storici da revisionare.
 
 Implementazione minima: uno script `scripts/seed-archivio.mjs` che popola la collection `temi` da queste fonti al primo deploy. Idempotente (skippa i record con slug già esistente).

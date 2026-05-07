@@ -32,7 +32,8 @@ Tutto vive sotto **`CONTENT_BASE_PATH`** (env, default `server/content/`):
 $CONTENT_BASE_PATH/
 └── hcaire/
     ├── index.md              # contiene H2 → sezioni dinamiche
-    ├── manifesto.md
+    ├── manifesto.md            # manifesto AI (uso dell'AI nelle scienze umane)
+    ├── manifesto-teorico.md    # manifesto teorico (esplicitazione dei quadri della ricerca)
     ├── metodo.md
     ├── ia-centrata-sull-umano.md
     ├── agentic-shift.md
@@ -148,6 +149,18 @@ Compone:
 - `<MarkdownRenderer>` + `<AgenticLabel>` per il corpo.
 - `<TableOfContents>` lato destro (sticky).
 - Caso speciale per `section === 'progetti'`: card promozionale verso "Sviluppo bambino" sotto il contenuto.
+- Caso speciale per `section === 'manifesto'`: due tab (vedi §7.1).
+
+### 7.1 Manifesto a due tab — teorico (default) + AI
+
+A partire da 2026-05-07 la sezione `manifesto` non è più un singolo documento ma due manifesti complementari, presentati come tab nella stessa pagina:
+
+- **Manifesto teorico** (`manifesto-teorico.md`, **tab di default**): chiede a chi fa ricerca sullo sviluppo umano di esplicitare i quadri antropologici, filosofici e normativi che orientano la lettura dei dati. Esplicitazione come condizione del rigore, non aggiunta esterna alla scienza.
+- **Manifesto AI** (`manifesto.md`): "Prima della risposta viene il contesto" — governare la memoria di contesto come fondamento dell'uso dell'AI nelle scienze umane.
+
+Il primo è il presupposto logico del secondo: prima si esplicitano i quadri della ricerca, poi si pone il problema specifico dell'AI dentro quei quadri.
+
+Implementazione: `HcairePage.tsx` fetcha entrambi gli endpoint in parallelo (`Promise.all([getSection('manifesto'), getSection('manifesto-teorico')])`), tiene un `activeTab` state (`'teorico' | 'ai'`, default `'teorico'`) e renderizza i bottoni-tab + il contenuto del tab corrente con `<MarkdownRenderer>`. La logica si attiva solo se `section === 'manifesto'`.
 
 ### `HcaireLanding` / `HcaireProtocolliLanding`
 

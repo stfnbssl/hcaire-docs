@@ -97,7 +97,6 @@ Tre workspaces npm definiti in `package.json` root. `npm run dev` lancia i tre p
 Vedi `App.tsx` per la lista completa. Punti notevoli:
 - `AdminRoute` wrapper — controlla `useUser()` Clerk e `publicMetadata.role === 'admin'`
 - Lazy loading per Admin*, KnowledgeBase, Letture, Corsi F1/F2/F3, Presentazione
-- Redirect storici da `/sviluppo-bambino/assi/*` a `/assi-strutturali/*`
 - Redirect storico da `/hcaire/ia-centrata-sull-umano` a `/hcaire/manifesto`
 
 ### Servizi e contesti

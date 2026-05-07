@@ -7,6 +7,8 @@ sidebar_position: 9
 
 Il workspace `local/` è un sidecar Node che gira **solo sul portatile dello sviluppatore** e fa da **ponte** tra il server cloud (Railway) e il progetto **Cowork** installato in locale. Questa pagina spiega perché esiste, mappa i tre casi d'uso che lo attraversano e isola il pattern comune riusabile per casi futuri.
 
+> **Documentazione operativa correlata**: per i dettagli di basso livello sullo spawn di Cowork (eseguibile, argomenti, working directory, stdio, mock mode, recupero file output), vedi `local/docs/cowork-spawn.md` nel repo `hcaire-blog`. Quel documento è complementare a questa pagina (architettura), e a `local/docs/prompt-composition.md` (cosa finisce nel prompt).
+
 ## 1. Perché esiste
 
 Cowork (oggi: Claude Code CLI come `claude --print --dangerously-skip-permissions`) **non è disponibile come servizio remoto invocabile via HTTP**. Si esegue solo come binario locale, con accesso al filesystem del progetto Cowork (`COWORK_PROJECT_PATH`) dove vivono i `CLAUDE.md` di prompt, gli schemi, i file di input precompilati e dove vengono scritti gli output.

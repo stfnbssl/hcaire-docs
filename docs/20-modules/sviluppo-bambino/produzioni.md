@@ -111,7 +111,7 @@ TemaAmbito = {
 
 ### Fase 3 — Costruzione del dispositivo (5 step, pipeline v3.0)
 
-A partire da v3.0 (D7-pipeline-f3-redesign, 2026-05-06) la pipeline F3 è stata ridotta da 11 step (1, 2, 3, 4, 5, 6, 6b, 6c, 7, 8, 9, 10) a 5 step lineari, allineati alla metodologia (`HCAIRE Slides/context/metodo/f3-strumenti-operativi.md`).
+A partire da v3.0 (D7-pipeline-f3-redesign, 2026-05-06) la pipeline F3 è stata ridotta da 11 step (1, 2, 3, 4, 5, 6, 6b, 6c, 7, 8, 9, 10) a 5 step lineari, allineati alla metodologia (`HCAIRE Slides/context/metodo/f3-strumenti-operativi.md`). v3.1 (D8, 2026-05-07) ha ridefinito `f3_step_5` come **Output-tipo contestualizzato**, ultimo step obbligatorio che produce l'artefatto pubblico finale.
 
 | Step | Etichetta | File-prefix | Verifica | Skip | Note |
 |---|---|---|---|---|---|
@@ -119,11 +119,11 @@ A partire da v3.0 (D7-pipeline-f3-redesign, 2026-05-06) la pipeline F3 è stata 
 | `f3_step_2` | Micro-dispositivo di campo | `micro-dispositivo-*.json` | sì | no | Costruisce il dispositivo nel template a 7 campi della metodologia + classificazione U1–U6 + condizioni di non-applicabilità. |
 | `f3_step_3` | Stress test e correzione | `stress-test-*.json` | sì | no | 5 casi tipologici integrati (`assenza_configurazione`, `configurazione_parziale`, `configurazione_distorta_chiudente`, `configurazione_oscillante`, `configurazione_apparente_indistinguibile`) + correzione condizionale del dispositivo. Input esterno facoltativo `casi_dominio`. |
 | `f3_step_4` | Verifica di coerenza F3 | `coerenza-*.json` | no¹ | no | Checklist 10 controlli normativi → verdetto: `valido` / `richiede_revisione` / `fuori_modello`. |
-| `f3_step_5` | Audit metodologico | `audit-metodologico-*.json` | no | **sì** | 8 controlli sulla qualità di esecuzione della pipeline F3. Opzionale: il dispositivo è considerato finalizzato dopo step 4 verificato. |
+| `f3_step_5` | Output-tipo contestualizzato | `output-tipo-{dominio}-*.json` | no | no | **v3.1 (D8)**: produce la versione del modulo triadico A–E (sezioni dell'output-tipo vuoto F2) contestualizzata per il dominio scelto. È l'**artefatto pubblico finale** della pipeline F3 — quello che il sito HCAIRE presenta come strumento operativo. Non è un audit della pipeline: produce un output sostantivo. |
 
 ¹ Lo step 4 *è* la verifica della pipeline F3: non ha senso applicargli un altro layer di verifica.
 
-Un **tema** (`temi/<id>/`) corrisponde alla coppia `(theme_F2, ambito)` (vedi §3.1). La sequenza è lineare semplice — `1 → 2 → 3 → 4 → 5` — senza biforcazioni né virtual ref. Solo `f3_step_5` è skippabile.
+Un **tema** (`temi/<id>/`) corrisponde alla coppia `(theme_F2, ambito)` (vedi §3.1). La sequenza è lineare semplice e tutta obbligatoria — `1 → 2 → 3 → 4 → 5` — senza biforcazioni né virtual ref né step skippabili.
 
 **Cosa è scomparso da v2.x → v3.0**:
 - gli step di trasferimento (vecchi 7-9: trasferibilità, adattamento strutturale, dispositivo completo) — un tema applicato a un nuovo ambito è semplicemente una nuova pipeline F3 con dominio diverso, non un trasferimento;
@@ -154,7 +154,7 @@ client/public/pipeline/
 │       ├── micro-dispositivo-vN.json       # f3_step_2
 │       ├── stress-test-vN.json             # f3_step_3
 │       ├── coerenza-vN.json                # f3_step_4
-│       ├── audit-metodologico-vN.json      # f3_step_5 (opzionale)
+│       ├── output-tipo-{dominio}-vN.json   # f3_step_5 (artefatto pubblico finale, D8)
 │       └── revisioni.md                     # storia decisionale, opzionale
 └── inputs/temi/<tema-id>/
     ├── f3-step-1-contesto-ambito.json      # auto-popolato dal bridge ambiti
@@ -422,18 +422,26 @@ La sezione era originariamente un elenco dei vincoli architetturali per progetta
 ### 8.1 Schemi JSON non validati lato sito
 Gli **schemi JSON di ciascuno step** sono noti come `*-schema.json` nelle cartelle di Cowork (`input/produzioni/f{2,3}-step-*-*/`) e usati lì come direttiva agli agenti. Lato webapp, le interfacce TypeScript in `client/src/types/pipeline.ts` descrivono il subset consumato dai viewer, ma non c'è validazione runtime (zod, ajv) sui dati prodotti dagli step. Per ora sufficiente; quando i viewer specifici verranno introdotti (vedi 8.2) sarà naturale aggiungere la validazione.
 
-### 8.2 Viewer specifici per gli step F3 v3.0
-I componenti di preview per gli output dei nuovi step F3 non sono ancora stati implementati (D7 §5.4 li lista come *tappa successiva*):
+### 8.2 Viewer strutturati F2 e F3 (v3.1) ✓ implementati
 
-| Step | Componente di preview suggerito | Stato |
+A 2026-05-07 il file `client/src/components/pipeline/output-viewers/F3OutputViewer.tsx` è stato riscritto da zero per la pipeline v3.1, sostituendo i 10 sub-viewer pre-D7 con 5 viewer allineati ai nuovi schemi. In parallelo, `F2OutputViewer.tsx` è stato esteso con i 3 viewer F2 mancanti.
+
+| Step | Sub-viewer | Note |
 |---|---|---|
-| `f3_step_1` (Nodo + funzione) | JSON pretty-printed | fallback OK |
-| `f3_step_2` (Micro-dispositivo) | `MicroDispositivoViewer` (template a 7 campi + U1–U6 + non_applicability) | da implementare |
-| `f3_step_3` (Stress test e correzione) | `StressTestDashboard` riconfigurato sui 5 nuovi `case_type` | da rivedere — il vecchio renderer assume lo schema di vecchio `f3_step_10` |
-| `f3_step_4` (Coerenza F3) | `CoerenzaChecklistViewer` (10 controlli + critici falliti in evidenza) | da implementare |
-| `f3_step_5` (Audit metodologico) | `AuditViewer` (8 controlli + esito globale) | da implementare |
+| `f3_step_1` (Nodo + funzione) | `Step1Viewer` | Nodo dominante, funzione, campo bersaglio, checklist coerenza (4 outcome) |
+| `f3_step_2` (Micro-dispositivo) | `Step2Viewer` | Template 7 campi + micro-azioni + U1-U6 + non-applicabilità |
+| `f3_step_3` (Stress test e correzione) | `Step3Viewer` | 5 casi tipologici + verdetto + correzione condizionale del dispositivo |
+| `f3_step_4` (Coerenza F3) | `Step4Viewer` | 10 controlli + verdetto finale + failures critici |
+| `f3_step_5` (Output-tipo contestualizzato) | `Step5Viewer` | Sezioni A-E + sintesi narrativa + direzione orientativa + dispositivo collassabile |
+| `f2_step_2a` (Verifica nodi trasversali) | `Step2aViewer` | Mappatura su canonici N1-N7 + plausibilità + derivati puri (NUOVO) |
+| `f2_step_4b` (CE prototipica) | `Step4bViewer` | CE con dimensioni S/R/D/T/A + notazione formale + varianti (NUOVO) |
+| `f2_step_6` (Output-tipo vuoto) | `Step6Viewer` | Sezioni A-E del passaporto + tipologia universale (NUOVO) |
 
-Per la prima implementazione si accetta il fallback "JSON pretty-printed" su tutti.
+`F2_VIEWER_STEPS = ['2','2a','3','4','4b','5','6']`, `F3_VIEWER_STEPS = ['1','2','3','4','5']`. Step non coperti cadono nel fallback JSON pretty-printed.
+
+**Smoke-test fixtures**: `client/src/components/pipeline/output-viewers/__fixtures__/` contiene 8 fixture JSON realistiche (tema "pointing precoce", dominio clinico) conformi agli schemi. Servono come riferimento canonico dello shape atteso e per ispezione manuale (`<F3OutputViewer stepId="..." data={fixture} />`); non c'è infrastruttura vitest sul client. Il type-check (`tsc --noEmit`) è la verifica continua di non-regressione.
+
+**Cleanup eseguito**: rimossi i sub-viewer F3 obsoleti (`Step6Viewer..Step10Viewer`, `Step6bAlt`, `Step3Correction`) — la pipeline F3 v3.x non li produce. `Step1Viewer` di F2 (theme-discovery, step rimosso) lasciato come dead code in attesa di cleanup separato.
 
 ### 8.3 Renderer input esterni rinominati
 I renderer esterni si trovano inline in `client/src/components/pipeline/orchestration/ExternalInputForm.tsx`. Con v3.0:
@@ -461,6 +469,29 @@ Le esecuzioni F3 precedenti a v3.0 sono **prove tecniche da abbandonare** (decis
 ---
 
 ## Storia modifiche pipeline
+
+### Pipeline v3.1 — 2026-05-07
+
+**D8 — `f3_step_5` da Audit metodologico a Output-tipo contestualizzato**.
+
+`f3_step_5` cambia ruolo metodologico: non è più un audit della qualità di esecuzione della pipeline (8 controlli A1-A8), ma produce l'**artefatto pubblico finale** — la versione del modulo triadico A-E (sezioni dell'output-tipo vuoto F2) contestualizzata per il dominio scelto. È il "strumento operativo" che il sito HCAIRE pubblica.
+
+**Cambiamenti config** (`pipeline-step-config.json`, `_version: 3.1`):
+- `label`: "Audit metodologico (opzionale)" → "Output-tipo contestualizzato"
+- `output_prefix`: `audit-metodologico` → `output-tipo`
+- `output_path_template`: `temi/{tema_id}/output-tipo-{dominio}-v{N}.json`
+- `inputs_pipeline`: ora 5 dipendenze (`f3_step_4`, `f3_step_3`, `f3_step_2`, `f2_step_6`, `f3_step_1`); aggiunto `f2_step_6` come fonte della struttura A-E da contestualizzare
+- `inputs_strutturali[0]`: `f3-step-5-output-tipo-contestualizzato/output-tipo-schema.json`
+- `can_skip: false`, `skip_condition` rimosso
+
+**Cambiamenti correlati**:
+- `local/src/pipeline/constants.ts`: `STEP_FOLDER_MAP['f3_step_5']` → `f3-step-5-output-tipo-contestualizzato`
+- `client/src/components/pipeline/output-viewers/F3OutputViewer.tsx`: `Step5Viewer` riscritto sul nuovo schema (sezioni A-E + sintesi narrativa + dispositivo collassabile)
+- `client/src/components/pipeline/DeviceLineage.tsx` + `SviluppoBambinoPipelineMap.tsx`: label "Audit metodologico" → "Output-tipo contestualizzato"
+
+**Documenti operativi**:
+- Spec D8 sotto `claude-cowork/Sviluppo Bambino/input/produzioni/webapp-hcaire/specifiche/D8-f3-step-5-output-tipo-contestualizzato.md`
+- Script `scripts/cleanup-obsolete-pipeline-folders.ps1` per rimuovere le 11 cartelle obsolete F2/F3 dal filesystem Cowork (post-D7 + post-D8). Supporta `-DryRun` e `-Recycle` (Cestino).
 
 ### Pipeline v3.0 — 2026-05-06
 

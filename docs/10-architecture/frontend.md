@@ -51,9 +51,7 @@ Vedi [Stato applicativo](./stato-applicativo.md) per il dettaglio dei tre contex
 `react-router-dom` 6.x con `BrowserRouter`. Vedi [Routing](./routing.md) per la mappa completa. Punti di forma:
 
 - **Catch-all 404** in fondo (`<Route path="*" element={<NotFound />} />`).
-- **Redirect storici** dichiarativi:
-  - `/hcaire/ia-centrata-sull-umano` → `/hcaire/manifesto`
-  - `/sviluppo-bambino/assi/*` → `/assi-strutturali/*` (4 redirect, alcuni con `useParams` per propagare `:asseSlug`/`:chapterSlug`)
+- **Redirect storico** dichiarativo: `/hcaire/ia-centrata-sull-umano` → `/hcaire/manifesto`.
 - **Gating admin** via componente `AdminRoute` (vedi §5).
 
 ## 4. Lazy loading

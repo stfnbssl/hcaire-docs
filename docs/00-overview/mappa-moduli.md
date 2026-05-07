@@ -25,8 +25,9 @@ flowchart LR
   end
 
   subgraph VERT["Verticali tematici"]
-    HCAIRE["HCAIRE<br/>(manifesto, protocolli)"]:::vertical
+    HCAIRE["HCAIRE<br/>(manifesti, protocolli)"]:::vertical
     Letture["Letture critiche"]:::vertical
+    Assi["Assi strutturali<br/>(6 assi, 44 capitoli — sezione principale)"]:::vertical
     SB["Sviluppo Bambino<br/>(metodo, fasi, modello, interlocuzioni)"]:::vertical
     SBProd["SB / Produzioni<br/>(pipeline F2/F3)"]:::vertical
   end
@@ -62,6 +63,7 @@ flowchart LR
   HCAIRE --> Markdown
   Letture --> Mongo
   Letture --> Redis
+  Assi --> Markdown
   SB --> Markdown
   SBProd --> Mongo
   AdminDash --> Auth
@@ -83,9 +85,9 @@ flowchart LR
 | **Site Content** | `/admin/testi` | `GET /api/site-content`, `GET/PUT /api/admin/site-content` |
 | **HCAIRE** | `/hcaire`, `/hcaire/protocolli`, `/hcaire/protocolli/:slug`, `/hcaire/:section` | `GET /api/hcaire/`, `/api/hcaire/:section`, `/api/hcaire/:section/:subsection` |
 | **Letture** | `/letture`, `/letture/elenco`, `/letture/:slug`, `/admin/letture/*` | `GET /api/letture/*`, `GET/POST/PATCH/DELETE /api/admin/letture/*`, `POST /api/admin/letture/:slug/steps/:step_id/run` |
-| **Sviluppo Bambino — narrativa** | `/sviluppo-bambino/*` (≈18 route: finalita, metodo, fasi, concetti, modello, assi, interlocuzioni, riflessioni…) | `GET /api/sviluppo-bambino/*` (≈22 endpoint specchio) |
+| **Sviluppo Bambino — narrativa** | `/sviluppo-bambino/*` (finalità, metodo, fasi, concetti, modello, interlocuzioni, riflessioni…) | `GET /api/sviluppo-bambino/*` |
 | **Sviluppo Bambino — Produzioni** | `/sviluppo-bambino/produzioni*` (landing, temi, pipeline map, dispositivo, stress test) | `GET /api/pipeline/*` + file statici sotto `/pipeline/` (vedi modulo) |
-| **Assi strutturali (top-level)** | `/assi-strutturali*` | come SB narrativa (assi) |
+| **Assi strutturali** (sezione principale) | `/assi-strutturali`, `/assi-strutturali/capitoli`, `/assi-strutturali/:asseSlug`, `/assi-strutturali/:asseSlug/:chapterSlug` | `GET /api/sviluppo-bambino/assi`, `/assi/:asseSlug`, `/assi/:asseSlug/:chapterSlug` |
 | **Workflow Log** | `/admin/workflow` | (Redis-driven, `WorkflowLog` model) |
 
 ## Fuori scope (per questa fase di documentazione)

@@ -84,19 +84,12 @@ Sotto-aree principali (vedi `App.tsx` per la lista completa):
 
 | Path | Componente |
 |------|------------|
-| `/assi-strutturali` | `SviluppoBambinoAssiLanding` |
-| `/assi-strutturali/capitoli` | `SviluppoBambinoAssi` |
-| `/assi-strutturali/:asseSlug` | `SviluppoBambinoAsseChapters` |
-| `/assi-strutturali/:asseSlug/:chapterSlug` | `SviluppoBambinoChapter` |
+| `/assi-strutturali` | `AssiStrutturaliLanding` |
+| `/assi-strutturali/capitoli` | `AssiStrutturaliCapitoli` |
+| `/assi-strutturali/:asseSlug` | `AsseChaptersPage` |
+| `/assi-strutturali/:asseSlug/:chapterSlug` | `ChapterPage` |
 
-### Redirect storici da `/sviluppo-bambino/assi/*`
-
-| Path | Destinazione |
-|------|--------------|
-| `/sviluppo-bambino/assi` | `/assi-strutturali` |
-| `/sviluppo-bambino/assi/capitoli` | `/assi-strutturali/capitoli` |
-| `/sviluppo-bambino/assi/:asseSlug` | `/assi-strutturali/:asseSlug` (via `RedirectAsseChapters`, propaga il param) |
-| `/sviluppo-bambino/assi/:asseSlug/:chapterSlug` | `/assi-strutturali/:asseSlug/:chapterSlug` (via `RedirectAsseChapter`) |
+I componenti vivono in `client/src/pages/assi-strutturali/`.
 
 ### Admin (gating `<AdminRoute>`)
 
