@@ -1,6 +1,27 @@
 # HANDOFF — Sistema di documentazione hcaire-docs
 
-> Snapshot **2026-05-05** (setup) → **aggiornamento 2026-05-05** (chiusura Fase 2). Questo file serve a riprendere il lavoro su un'altra macchina senza perdere contesto.
+> Snapshot **2026-05-05** (setup) → **aggiornamento 2026-05-05** (chiusura Fase 2) → **aggiornamento 2026-05-09** (assi strutturali — migrazione JSON ibrido). Questo file serve a riprendere il lavoro su un'altra macchina senza perdere contesto.
+
+## Aggiornamento 2026-05-09 — modulo Assi strutturali
+
+Riportate in documentazione le modifiche profonde fatte sul modulo **Assi strutturali** in `hcaire-blog` (commit `68d647f`):
+
+- **Schema dati**: introdotti tipi shared `Author`, `Book`, `Reference`, `Footnote`, `ChapterDocument`, `CitationsIndex` in `shared/types/assi.d.ts`. I 44 capitoli sono ora rappresentati come JSON ibrido (body markdown a token + array structures di references e footnotes).
+- **Pipeline**: 6 npm script (`assi:inventory`, `catalogo:build`, `assi:convert`, `assi:merge-revision`, `assi:fix-img-ext`) + uno ad-hoc (`decorateMarkers.ts`). Documentati end-to-end in `docs/20-modules/assi-strutturali-pipeline.md`, inclusi algoritmo di re-iniezione `<img>` per il roundtrip Google Docs e procedura di applicazione revisioni.
+- **Endpoint server**: `GET /api/sviluppo-bambino/assi/:asseSlug/:chapterSlug` ora ritorna `ChapterDocument` (non più `{frontmatter, content, isEmpty}`); nuovi `GET /assi/citazioni` (indice aggregato), `GET /catalogo/authors`, `GET /catalogo/books`. Endpoint legacy markdown-runtime rimosso.
+- **Frontend**: nuovo `StructuredChapterRenderer` (con sezione "altri capitoli che lo citano" nel pannello rilevanza), nuova pagina `Bibliografia` (tab autori/libri, filtro, sort, drawer di dettaglio). `MarkdownRenderer` semplificato (resta per il resto del sito).
+- **Catalogo**: cresciuto a 46 autori + 67 libri (aggiunte voci Spinoza, Hegel + 4 libri durante il primo lotto di revisioni).
+
+**Pagine aggiornate/aggiunte**:
+
+- `docs/20-modules/assi-strutturali.md` — riscritta. Aggiunge §3 "Sorgenti dati: pipeline a tre livelli", §4 "Schema dati", §6 "Pattern ricorrente", §7 "Bibliografia e citazioni", §11 "Criticità e debiti" (asset placeholder, OpenAPI non aggiornato, ecc.). Aggiornati File Coinvolti, Storia (entry 2026-05-09), Test.
+- `docs/20-modules/assi-strutturali-pipeline.md` — nuova. Procedura editoriale operativa: tabella script, sequenza completa per applicare revisioni Google Docs, algoritmo re-iniezione, gestione asset mancanti.
+
+**Non aggiornato (debito riconosciuto)**:
+
+- `static/openapi.yaml` non documenta nessun endpoint `/assi/*` (né i nuovi né i pre-esistenti). Da affrontare in un passaggio separato sull'OpenAPI.
+
+---
 
 ## 1. Cosa è stato fatto in questa sessione
 
