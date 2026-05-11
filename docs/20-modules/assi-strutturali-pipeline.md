@@ -159,5 +159,5 @@ npm run assi:convert -- --write   # rigenera i JSON
 ## 8. Riferimenti
 
 - Script: `hcaire-blog/server/src/scripts/`
-- Tipi: `hcaire-blog/shared/types/assi.d.ts`
+- Tipi: `hcaire-blog/server/src/shared/types/assi.d.ts` e `hcaire-blog/client/src/shared/types/assi.d.ts` (due copie sincronizzate, una per app, perché gli hosting di server e client non condividono il filesystem)
 - Memoria operativa Claude: `project_assi_json.md` (procedura roundtrip salvata per le sessioni future)

@@ -54,7 +54,7 @@ catalogo/                                ← (3) derivato dal catalogo rilevanza
 
 > **Nota transitoria**: il file `client/public/data/sviluppo-bambino-rilevanza-giorno-1.json` è ancora la sorgente del catalogo. La direzione si invertirà quando ci sarà un editor admin o una migrazione su MongoDB: i nuovi `authors.json`/`books.json` diventeranno autoritativi e il rilevanza JSON verrà rimosso. Vedi [pipeline editoriale](./assi-strutturali-pipeline.md).
 
-## 4. Schema dati (`shared/types/assi.d.ts`)
+## 4. Schema dati (tipi condivisi server/client)
 
 Tipi condivisi tra server e client:
 
@@ -210,7 +210,7 @@ L'architettura è **logica, non cronologica**: ogni asse presuppone il precedent
 - **`CONTENT_BASE_PATH`**: vincolo strutturale (vedi [Inventario §7](../00-overview/inventario.md)).
 - **Componenti condivisi**: `MarkdownRenderer` (per il body delle note dentro `StructuredChapterRenderer`), `Breadcrumb`, `PrevNext`, `TableOfContents`, `StubNotice`, `AgenticLabel`, `Navigation` (top-level).
 - **`AssiStrutturaliNav`**: sotto-nav dedicata, già al livello giusto in `components/`.
-- **`shared/types/assi.d.ts`**: tipi condivisi tra server (path relativo `../../../shared/types/assi`) e client (alias `@shared/types/assi`).
+- **Tipi condivisi**: definiti in due copie sincronizzate (`server/src/shared/types/assi.d.ts` per il server, `client/src/shared/types/assi.d.ts` per il client). Server importa via path relativo `'../shared/types/assi'`, client via alias `'@shared/types/assi'`. La duplicazione è una scelta deliberata: server e client sono deployati su hosting separati che non vedono nessuna cartella al di fuori della propria radice.
 - **`@tanstack/react-query`**: NON usato qui. Le pagine fanno `Promise.all` di fetch nativi con `useState/useEffect`, allineandosi al pattern delle altre aree narrative.
 
 ## 11. Criticità note e debiti

@@ -7,11 +7,13 @@ const config: Config = {
   tagline: 'Documentazione del monorepo hcaire-blog',
   favicon: 'img/favicon.ico',
 
-  url: 'http://localhost',
-  baseUrl: '/',
+  url: 'https://stfnbssl.github.io',
+  baseUrl: '/hcaire-docs/',
 
   organizationName: 'stfnbssl',
   projectName: 'hcaire-docs',
+  trailingSlash: false,
+  deploymentBranch: 'gh-pages',
 
   onBrokenLinks: 'warn',
 
