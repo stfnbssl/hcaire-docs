@@ -18,7 +18,7 @@ L'app usa **Clerk** come unico provider di identità per gli utenti finali e gli
 | Automazione esterna | API key in header `Authorization: Bearer <COWORK_API_KEY>` | `POST /api/contents/import` |
 | Lemon Squeezy | Firma HMAC SHA256 sul body raw | `POST /webhooks/lemonsqueezy` |
 
-## 2. Flusso login → contenuto plus
+## 2. Flusso login →  contenuto plus 
 
 ```mermaid
 sequenceDiagram
