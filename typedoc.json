@@ -3,15 +3,15 @@
   "name": "HCAIRE — API reference (server)",
   "entryPointStrategy": "expand",
   "entryPoints": [
-    "../hcaire-blog/server/src/services",
-    "../hcaire-blog/server/src/middleware",
-    "../hcaire-blog/server/src/models",
-    "../hcaire-blog/server/src/controllers",
-    "../hcaire-blog/server/src/utils",
-    "../hcaire-blog/server/src/types",
-    "../hcaire-blog/server/src/config"
+    "../hcaire/server/src/services",
+    "../hcaire/server/src/middleware",
+    "../hcaire/server/src/models",
+    "../hcaire/server/src/controllers",
+    "../hcaire/server/src/utils",
+    "../hcaire/server/src/types",
+    "../hcaire/server/src/config"
   ],
-  "tsconfig": "../hcaire-blog/server/tsconfig.json",
+  "tsconfig": "../hcaire/server/tsconfig.json",
   "out": "static/typedoc",
   "exclude": [
     "**/__tests__/**",

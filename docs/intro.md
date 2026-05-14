@@ -1,32 +1,48 @@
 ---
+title: Documentazione tecnica HCAIRE
+sidebar_position: 1
 slug: /
-title: Benvenuto
-sidebar_position: 0
 ---
 
 # Documentazione tecnica HCAIRE
 
-Questa è la documentazione tecnica del monorepo **`hcaire-blog`**: un'app React/Vite + Express/MongoDB per la pubblicazione di contenuti, gestione admin, e verticali tematici.
+Benvenuto nella documentazione della webapp **HCAIRE** (`hcaire.ai`). Il codice vive in un monorepo `hcaire` con tre workspace (`server/`, `client/`, `local/`). Questo sito documenta:
+
+- l'**architettura** (stack, deployment, routing, autenticazione, stato applicativo);
+- i **moduli funzionali** (blog, account, sottoscrizioni, admin CMS, HCAIRE laboratorio, Metodo, Sviluppo Bambino, Letture critiche, Assi strutturali, Bartleby, Pipeline orchestrazione, integrazioni esterne);
+- le **API e gli strumenti di riferimento** (OpenAPI, TypeDoc, proposta Storybook).
 
 ## Come è organizzata
 
 | Sezione | Contenuto |
-|---|---|
-| **Panoramica** | Cos'è l'applicazione, mappa moduli, glossario, inventario tecnico |
-| **Architettura** | Stack, frontend, backend, database, autenticazione, routing, deployment |
-| **Moduli** | Una scheda per ciascun modulo del core (autenticazione, contenuti, navigation, admin CMS, account, letture, hcaire, sviluppo-bambino) |
-| **API** | Endpoint REST del server Express |
-| **Reference** | Documentazione automatica TypeDoc/OpenAPI/Storybook (futuro) |
+|---------|-----------|
+| **Panoramica** (`00-overview/`) | Cos'è l'applicazione, inventario tecnico, mappa moduli, glossario, obiettivi funzionali |
+| **Architettura** (`10-architecture/`) | Stack, frontend, backend, database, autenticazione, routing, stato applicativo, deployment, ponte locale Cowork |
+| **Moduli** (`20-modules/`) | Una scheda per ogni modulo funzionale (con scopo, file, rotte, dati, criticità) |
+| **API** (`30-api/`) | OpenAPI 3.1, TypeDoc, proposta Storybook |
+| **Reference** (`40-reference/`) | Placeholder per riferimenti generati (link a Redoc, TypeDoc) |
+| **TODO / proposte aperte** (`90-todo/`) | Decisioni non ancora prese (es. migrazioni MongoDB, refactor backend laboratorio) |
 
-## Scope di questa documentazione
+Il sidebar è auto-generato dalla struttura cartelle: l'ordine è guidato dai prefissi numerici e dai file `_category_.json`.
 
-Documentiamo lo **scope B (core stabile)**: blog, admin CMS, autenticazione, navigation, markdown, account, letture, hcaire, sviluppo-bambino con produzioni.
+## Scope
 
-**Fuori scope**: Bartleby (sub-app separata, ha già il proprio CLAUDE.md) e Corso Fase 3 (in lavorazione, da documentare quando converge).
+La documentazione **copre tutta l'applicazione**. Niente parti escluse "per ora": Bartleby, Pipeline F2/F3, Metodo, Catalogo, Archivio Temi, Telegram/Cowork sono tutti in scope.
+
+Restano fuori solo:
+
+- documenti di prodotto / pitch deck (non tecnici);
+- contenuti editoriali del blog e degli archivi (sono dati, non architettura).
 
 ## Repository
 
-- **App**: `C:\my\projects\hcaire-blog\`
-- **Docs (questo repo)**: `C:\my\projects\hcaire-docs\`
+| Repo | Cosa contiene |
+|------|---------------|
+| **`hcaire`** (ex `hcaire-blog`) | Applicazione: server Express, client React, worker local |
+| **`hcaire-docs`** (questo) | Documentazione Docusaurus |
 
-I due repo sono **paralleli e indipendenti**. Gli artefatti generati automaticamente (TypeDoc, OpenAPI) verranno sincronizzati tramite script dedicati nelle fasi successive.
+I due repo sono **cartelle sorelle** sul disco. Lo script `npm run sync-docs` legge `../hcaire/server/src/` per generare il TypeDoc.
+
+## Lingua
+
+Tutto in italiano (`i18n.defaultLocale: 'it'`).

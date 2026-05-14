@@ -29,7 +29,7 @@ Esporre nella `<Navigation>` sticky:
 | File | Ruolo |
 |------|-------|
 | `server/src/models/Navigation.ts` | Schema Mongoose, collection `navigation` |
-| `server/src/routes/nav.ts` | `GET /api/navigation` (un'unica rotta, pubblica) |
+| `server/src/routes/nav.ts` | `GET /api/navigation` (pubblica) + `POST/PUT/DELETE` admin |
 
 ### Frontend
 
@@ -45,18 +45,18 @@ Esporre nella `<Navigation>` sticky:
 | Verb | Path | Auth | Funzione |
 |------|------|------|----------|
 | `GET` | `/api/navigation` | pubblica | Lista delle voci con `isVisible: true`, sort `order` ASC |
-
-Niente endpoint di scrittura: la collection si edita oggi a mano su Atlas (vedi §9).
+| `POST` | `/api/navigation` | `requireAdmin` | Crea voce |
+| `PUT` | `/api/navigation/:id` | `requireAdmin` | Aggiorna voce |
+| `DELETE` | `/api/navigation/:id` | `requireAdmin` | Elimina voce |
 
 ## 5. Componenti UI
 
 `Navigation.tsx` espone il menu sticky in cima a tutte le pagine (montato in `AppLayout`). Struttura:
 
 - **Logo / brand** (link `/`).
-- **Aree statiche** (sempre visibili): Laboratorio (`/hcaire`), Assi Strutturali (`/assi-strutturali`), Progetti (`/progetti`).
+- **Aree statiche** (sempre visibili): HCAIRE laboratorio (`/hcaire`), Metodo (`/metodo`), Assi Strutturali (`/assi-strutturali`), Progetti (`/progetti`), Letture critiche (`/letture`), Sviluppo Bambino (`/sviluppo-bambino`).
 - **Voci dinamiche** (da DB): mappate da `items.map(...)` come `NavLink`.
 - **Bartleby**: condizionale (`isBartleby || isAdmin`).
-- **Letture critiche**: statica.
 - **Admin**: condizionale (solo admin).
 - **`UserNav`**: bottoni identità + badge piano + Pricing/Abbonati.
 
@@ -118,10 +118,11 @@ Nessun `timestamps: true`: i record di nav non tracciano createdAt/updatedAt.
 - **Modulo [Autenticazione](./autenticazione.md)**: per `useAuth`, `useUser`, `useIsAdmin`.
 - **`SubscriptionContext`**: per `isBartleby`, `isActive` (gating Bartleby + CTA Abbonati).
 - **`SiteConfigContext`**: per `isTestMode` (nasconde "Abbonati").
+- **Nav modulari per sezione** (`AssiStrutturaliNav`, `MetodoNav`, `LaboratorioNav`, `SviluppoBambinoNav*`, `BartlebyNav`): rendono il sotto-menu specifico una volta entrati nella sezione, indipendenti dalla `<Navigation>` globale.
 
 ## 9. Criticità note
 
-- **Niente UI admin** per gestire le voci di nav. La tabella `navigation` si edita oggi a mano (mongosh, MongoDB Compass o Atlas Data Explorer). Da considerare se evolve.
+- **Niente UI admin dedicata** per gestire le voci di nav, pur essendoci gli endpoint REST `POST/PUT/DELETE`. La tabella `navigation` oggi si edita via mongosh/Atlas o chiamate API dirette. Da valutare una pagina admin se evolve.
 - **Mix statico/dinamico** può confondere: aggiungere "Letture critiche" come voce dinamica non avrebbe effetto (è già hardcoded). Le voci statiche prevalgono nel layout.
 - **`isSpecial` richiede una route preesistente in `App.tsx`**. Non c'è validazione: se si crea un `Navigation` con `slug: 'foo'` e `isSpecial: true` ma `/foo` non è una route, il link va su 404.
 - **No fallback se `/api/navigation` è giù**: il menu mostra solo le voci statiche, comportamento accettabile ma silenzioso.

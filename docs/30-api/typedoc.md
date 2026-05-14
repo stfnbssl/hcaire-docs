@@ -13,22 +13,22 @@ API reference TypeScript del workspace `server/`, **generata automaticamente** d
 
 ## Cosa copre
 
-TypeDoc analizza i seguenti entry point di `hcaire-blog/server/src/`:
+TypeDoc analizza i seguenti entry point di `hcaire/server/src/`:
 
 | Cartella | Contenuto |
 |----------|-----------|
 | `services/` | `messageBus`, `pipelineEventSubscriber`, `lettureMessageBus`, `lettureEventSubscriber`, `staticContentReader`, `telegramBot`, `workflowLogger`, e tutti gli altri |
 | `middleware/` | `clerkAuth`, `apiKeyAuth`, `auth` (legacy) |
 | `models/` | Tutti i modelli Mongoose (esclusi `bartleby/`) |
-| `controllers/` | I controller dei domini in scope (esclusi `bartlebyController.ts` e `seedBartleby.ts`) |
+| `controllers/` | I controller dei domini (vedi note di esclusione) |
 | `utils/` | Helper letture, pipeline, ecc. |
 | `types/` | Type alias condivisi |
 | `config/` | `db.ts`, `redis.ts` |
 
-Esclusioni:
+Esclusioni configurate in `typedoc.json`:
 
 - `__tests__/` (suite di test).
-- `bartleby/` (sub-app fuori scope B).
+- `bartleby/` (sotto-cartella di modelli, esclusa storicamente). Le entità Bartleby sono comunque documentate in [Modulo Bartleby](../20-modules/bartleby.md). Da valutare se reinserirle nel TypeDoc.
 
 ## Configurazione
 
@@ -39,8 +39,8 @@ Esclusioni:
   "$schema": "https://typedoc.org/schema.json",
   "name": "HCAIRE — API reference (server)",
   "entryPointStrategy": "expand",
-  "entryPoints": ["../hcaire-blog/server/src/services", "..."],
-  "tsconfig": "../hcaire-blog/server/tsconfig.json",
+  "entryPoints": ["../hcaire/server/src/services", "..."],
+  "tsconfig": "../hcaire/server/tsconfig.json",
   "out": "static/typedoc",
   "exclude": ["**/__tests__/**", "**/bartleby/**", ...],
   "skipErrorChecking": true,
@@ -49,7 +49,7 @@ Esclusioni:
 }
 ```
 
-- **`entryPoints` punta a sibling**: la generazione presuppone che `hcaire-blog/` e `hcaire-docs/` siano cartelle sorelle sul filesystem.
+- **`entryPoints` punta a sibling**: la generazione presuppone che `hcaire/` e `hcaire-docs/` siano cartelle sorelle sul filesystem.
 - **`tsconfig` del server** è riusato così TypeDoc risolve correttamente i tipi.
 - **`skipErrorChecking: true`**: tollera errori TS marginali (utile durante sviluppo, dove il server può essere in stato non-buildable).
 
@@ -63,7 +63,7 @@ npm run sync-docs
 
 Cosa fa:
 
-1. Verifica che `../hcaire-blog/server/` esista (sibling check).
+1. Verifica che `../hcaire/server/` esista (sibling check).
 2. Esegue `npx typedoc` con `typedoc.json`.
 3. Output in `static/typedoc/` (gitignored — vedi `.gitignore`).
 4. Verifica che `static/openapi.yaml` esista (warning se mancante, no errore).
@@ -79,7 +79,7 @@ Dopo il sync, `npm run build` o `npm run start` includono il TypeDoc nei file st
 
 ## Limiti noti
 
-- **Dipendenza dal sibling layout**: TypeDoc deve poter leggere `../hcaire-blog/server/src/`. Su un'installazione che ha solo `hcaire-docs/` checkout (senza `hcaire-blog/`), `npm run sync-docs` fallisce. Senza il run, il link `/typedoc/` ritorna 404.
+- **Dipendenza dal sibling layout**: TypeDoc deve poter leggere `../hcaire/server/src/`. Su un'installazione che ha solo `hcaire-docs/` checkout (senza `hcaire/`), `npm run sync-docs` fallisce. Senza il run, il link `/typedoc/` ritorna 404.
 - **Nessuna documentazione del client**: per ora `client/src/` non è coperto. Aggiungerlo richiede un secondo entry point e probabilmente un secondo run TypeDoc (per evitare conflitti di tsconfig: il server è CommonJS, il client è ESM/Vite).
 - **Warning su tipi `@types/node`**: TypeDoc non risolve i link a tipi node esterni come `http.Server`, `EventEmitter.defaultMaxListeners`. Non bloccanti ma rumorosi nel log. Ignorabili.
 - **Output ~8 MB / 300 file**: grosso ma accettabile come asset statico (gitignored, rigenerato on demand).

@@ -28,10 +28,17 @@ In totale **~17 path** documentati, con schemi completi per request/response bas
 
 ## Cosa **non** copre (intenzionalmente)
 
-- **Verticali narrativi** (`/api/hcaire/*`, `/api/sviluppo-bambino/*`): contratto stabile *funzionalmente* ma in evoluzione *contenutisticamente*. Documentati nei moduli [HCAIRE](../20-modules/hcaire.md) e [SB narrativa](../20-modules/sviluppo-bambino/narrativa.md).
-- **Pipeline interna** (`/api/pipeline/*`, `/api/admin/letture/*/run`): API admin con payload complessi (input_files, prompt composer, ecc.) il cui schema è meglio descritto nei moduli [Letture](../20-modules/letture.md) e [Produzioni](../20-modules/sviluppo-bambino/produzioni.md), e nella pagina [Local — ponte Cowork](../10-architecture/local-cowork-bridge.md).
-- **Bartleby** (`/api/bartleby/*`): fuori scope B di questa documentazione.
-- **Auth legacy** (`POST /api/login`, `/api/logout`): dead code, da rimuovere (vedi [Architettura → Autenticazione §7](../10-architecture/autenticazione.md#residui-legacy)).
+Endpoint con contratto in evoluzione, meglio descritti nei moduli funzionali:
+
+- **Verticali narrativi** (`/api/hcaire/*`, `/api/metodo/*`, `/api/sviluppo-bambino/*`): documentati in [HCAIRE](../20-modules/hcaire.md), [Metodo](../20-modules/metodo.md), [SB narrativa](../20-modules/sviluppo-bambino/narrativa.md).
+- **Pipeline orchestrazione** (`/api/pipeline/*`): payload complessi (input_files, prompt composer, ambiti F2→F3). Vedi [Pipeline orchestrazione](../20-modules/pipeline-orchestrazione.md) e [Produzioni](../20-modules/sviluppo-bambino/produzioni.md).
+- **Letture orchestrazione** (`/api/admin/letture/*/run`): vedi [Letture](../20-modules/letture.md).
+- **Assi chapters** (`/api/admin/assi-chapters/*`): vedi [Assi strutturali](../20-modules/assi-strutturali.md).
+- **Catalogo** (`/api/admin/catalog/{authors,books}`): multipart + R2. Vedi [Catalogo](../20-modules/catalogo.md).
+- **Bartleby** (`/api/bartleby/*`): vedi [Bartleby](../20-modules/bartleby.md).
+- **Archivio Temi** (`/api/archivio/temi/*`): vedi [Archivio Temi](../20-modules/archivio-temi.md).
+- **Jobs/Skills/Plugins** (`/api/admin/{skills,plugins,job-definitions,job-requests}`): anagrafici admin, vedi [Jobs/Skills/Plugins](../20-modules/jobs-skills-plugins.md).
+- **Auth legacy** (`POST /api/login`, `/api/logout`): dead code (vedi [Autenticazione](../10-architecture/autenticazione.md)).
 
 ## Strumenti di autenticazione
 
@@ -91,20 +98,20 @@ Per ora la strategia è "manuale + disciplina": lo schema è una scheda di docum
 ### Lettura paginata articoli
 
 ```bash
-curl "https://api.hcaire.example/api/contents?page=1&limit=10"
+curl "https://api.hcaire.ai/api/contents?page=1&limit=10"
 ```
 
 ### Articolo plus con sessione
 
 ```bash
-curl "https://api.hcaire.example/api/contents/articolo-plus" \
+curl "https://api.hcaire.ai/api/contents/articolo-plus" \
   -H "Authorization: Bearer $CLERK_JWT"
 ```
 
 ### Import articolo via Cowork
 
 ```bash
-curl -X POST "https://api.hcaire.example/api/contents/import" \
+curl -X POST "https://api.hcaire.ai/api/contents/import" \
   -H "Authorization: Bearer $COWORK_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -120,7 +127,7 @@ curl -X POST "https://api.hcaire.example/api/contents/import" \
 ### Stato abbonamento
 
 ```bash
-curl "https://api.hcaire.example/api/subscriptions/status" \
+curl "https://api.hcaire.ai/api/subscriptions/status" \
   -H "Authorization: Bearer $CLERK_JWT"
 # → { "status": "active", "plan": "abbonato", "currentPeriodEnd": "2026-06-12T..." }
 ```

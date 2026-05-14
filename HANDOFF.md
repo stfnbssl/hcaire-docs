@@ -1,244 +1,126 @@
-# HANDOFF — Sistema di documentazione hcaire-docs
+# HANDOFF — Sistema di documentazione `hcaire-docs`
 
-> Snapshot **2026-05-05** (setup) → **aggiornamento 2026-05-05** (chiusura Fase 2). Questo file serve a riprendere il lavoro su un'altra macchina senza perdere contesto.
+> Snapshot **2026-05-14**. Riscrittura completa della documentazione allineata al codice della repo applicativa `hcaire` (ex `hcaire-blog`) e al nuovo dominio `hcaire.ai` (ex `hcaire.com`).
 
-## 1. Cosa è stato fatto in questa sessione
+## 1. Cosa è cambiato in questa riscrittura
 
-Inizializzato il sistema di documentazione **Docs-as-Code** con **Docusaurus** in `hcaire-docs/`, secondo il piano descritto in `prompts/Sistema di documentazione della webapp di HCAIRE.md`.
+La documentazione precedente era allineata al codice di inizio maggio e copriva un sottoinsieme dell'applicazione ("scope B"). Da maggio sono state fatte ristrutturazioni importanti:
 
-Stato per fase:
+- **Repo applicativa rinominata**: `hcaire-blog` → `hcaire`.
+- **Dominio rinominato**: `hcaire.com` → `hcaire.ai`.
+- **Moduli nuovi/promossi** integrati nel codice:
+  - **Bartleby** è ora in scope (knowledge base + console + outputs).
+  - **Metodo** è stato promosso da sotto-area di Sviluppo Bambino a sezione di primo livello (`/metodo/*`).
+  - **Pipeline orchestrazione** F2/F3 è una sezione dedicata con esecuzione step lato server (PipelineContext, PipelineStepExecution, PipelineExternalInput, watchdog).
+  - **Catalogo** (autori/libri con upload Cloudflare R2) e **Archivio Temi** (D5) sono entità dedicate.
+  - **Jobs / Skills / Plugins** sono moduli di orchestrazione admin.
+  - **SiteConfig / SiteContent** governano testi e configurazione globale.
+  - **Telegram bot + integrazione Cowork** (FEAT-001…FEAT-004 in `hcaire/FEATURES.md`).
 
-| Fase | Stato | Output |
-|------|-------|--------|
-| **0 — Setup Docusaurus** | ✓ completata | `package.json`, `docusaurus.config.ts`, `sidebars.ts`, `tsconfig.json`, `src/css/custom.css`, `.gitignore` aggiornato. Build verde con `npm run build`. |
-| **Migrazione produzioni-architettura.md** | ✓ completata | Spostato in `docs/20-modules/sviluppo-bambino/produzioni.md`. Originale rimosso da `hcaire-blog/docs/`. |
-| **1 — Inventario tecnico** | ✓ completata | `docs/00-overview/cos-e-l-applicazione.md`, `mappa-moduli.md`, `inventario.md`, `glossario.md`, `obiettivi-funzionali.md` (stub). |
-| **2 — Architettura reale** | ✓ completata | 9 pagine in `docs/10-architecture/`: `stack-tecnologico.md`, `frontend.md`, `backend.md`, `database.md`, `autenticazione.md`, `routing.md`, `stato-applicativo.md`, `deployment.md`, `local-cowork-bridge.md`. 3 diagrammi Mermaid integrati: mappa sistema (stack §6), flusso login Clerk → contenuto plus (autenticazione §2), flusso eventi pipeline FE↔BE↔Mongo↔Redis (backend §6). Build verde. |
-| **TODO / proposte aperte** | ✓ avviata | Nuova area `docs/90-todo/`. Prima voce: `migrazioni-mongodb.md` (problema + 5 strategie candidate + raccomandazione di partenza). |
-| **3 — Schede modulo** | ✓ completata | 9 schede in `docs/20-modules/`: `autenticazione`, `contenuti`, `navigation`, `account`, `subscriptions`, `admin-cms`, `hcaire`, `letture`, `sviluppo-bambino/narrativa`, `sviluppo-bambino/corsi-f1-f2` (oltre alla già migrata `sviluppo-bambino/produzioni`). Build verde. |
-| **4 — Automazione (TypeDoc/OpenAPI/Storybook)** | ◐ parziale | TypeDoc + OpenAPI + script `sync-docs` implementati. Storybook proposto ma non implementato. Vedi `docs/30-api/`. |
-| **5 — Pubblicazione** | ✓ funzionante | `npm run start` su porta 3000 (locale). |
+La scelta condivisa con il proprietario è stata: **riscrittura da zero**, niente versionamento storico — il versioning ricomincia da ora.
 
-## 2. Decisioni di scope (prese il 2026-05-05)
+## 2. Stato per area
 
-Le 5 scelte chiave su cui è impostata tutta la documentazione:
+| Area | Stato |
+|------|-------|
+| Configurazione Docusaurus (`docusaurus.config.ts`, `typedoc.json`, `sync-docs.mjs`, `sidebars.ts`) | da aggiornare nella stessa sessione |
+| `docs/intro.md` | riscritto |
+| `docs/00-overview/` (5 file) | riscritto |
+| `docs/10-architecture/` (9 file) | riscritto |
+| `docs/20-modules/` (moduli esistenti + nuovi) | riscritto |
+| `docs/30-api/` + `static/openapi.yaml` | aggiornato |
+| `docs/40-reference/` | placeholder, da popolare con link a TypeDoc / Redoc |
+| `docs/90-todo/` | rivisto |
 
-1. **Architettura repo**: opzione A — `hcaire-docs/` è repo separato, parallelo a `hcaire-blog/`. Gli artefatti generati (TypeDoc, OpenAPI) andranno sincronizzati con script in Fase 4.
-2. **Migrazione**: il file `hcaire-blog/docs/produzioni-architettura.md` è stato migrato in `hcaire-docs`, non duplicato.
-3. **Scope**: **B (core stabile)**. Include blog, admin CMS, autenticazione, navigation, markdown, account, letture, hcaire, sviluppo-bambino narrativa + produzioni. **Esclude**: Bartleby (sub-app, ha già `CLAUDE_bartleby.md`) e Corso Fase 3 (in lavorazione).
-4. **Storybook/TypeDoc**: introdotti **dopo** aver completato le schede modulo narrative.
-5. **Lingua**: tutta la documentazione in **italiano**.
-
-## 3. Stato git al 2026-05-05
-
-### `hcaire-docs/` — branch `main`, remote `https://github.com/stfnbssl/hcaire-docs.git`
-
-Tutto **non committato**. Da committare prima del transfer:
+## 3. Layout disco previsto
 
 ```
-M  .gitignore
-?? docs/
-?? docusaurus.config.ts
-?? package-lock.json
-?? package.json
-?? sidebars.ts
-?? src/
-?? tsconfig.json
-?? HANDOFF.md   (questo file)
+projects/
+├── hcaire/        ← repo applicativa (ex hcaire-blog)
+└── hcaire-docs/   ← questo repo
 ```
 
-`prompts/` è già tracciato (è dove vive il documento di piano originale).
+Lo script `npm run sync-docs` legge da `../hcaire/server/src/` per generare TypeDoc in `static/typedoc/` (gitignored).
 
-**Cosa fare prima del trasferimento:**
-```bash
-cd C:/my/projects/hcaire-docs
-git add .
-git commit -m "feat: setup Docusaurus + Fase 0/1 documentazione"
-git push origin main
-```
-
-`node_modules/` e `build/` sono in `.gitignore`, restano sulla macchina.
-
-### `hcaire-blog/` — branch `main`, remote `https://github.com/stfnbssl/hcaire-blog.git`
-
-Stato al momento del trasferimento (parziale, vedi `git status`):
-
-- **`D docs/produzioni-architettura.md`** — eliminazione legata alla migrazione. **Da committare** insieme.
-- **`M .claude/settings.local.json`**, `M package.json` — modifiche minori da valutare.
-- **WIP Corso Fase 3** (file untracked `client/src/components/corso-fase3/F3Builder.tsx`, `DecisionCycle.tsx`, `client/src/data/corso-fase3/modules/m02..m08.ts`, modifiche a `SlideRenderer.tsx`, `index.ts`, `corso.css`) — **decisione tua**: committare/stashare/portare via altri mezzi.
-
-**Suggerimento minimo** prima del transfer:
-```bash
-cd C:/my/projects/hcaire-blog
-git add docs/                     # commit della rimozione del file migrato
-git commit -m "docs: migrazione produzioni-architettura.md in hcaire-docs"
-git push origin main
-# poi decidere cosa fare del WIP corso-fase3
-```
-
-## 4. File NON in git che devi portare a mano
+## 4. File NON in git che servono altrove
 
 ### Segreti (`.env`)
 
-Né `hcaire-blog/server/.env` né `hcaire-blog/client/.env` sono versionati. Su nuova macchina vanno **ricreati** copiando da `.env.example` e riempiendo i valori. Variabili rilevanti elencate in `docs/00-overview/inventario.md` §7. Le credenziali da recuperare:
+`hcaire/server/.env` e `hcaire/client/.env` non sono versionati. Su nuova macchina vanno ricreati da `.env.example`. Credenziali rilevanti elencate in `docs/00-overview/inventario.md`:
 
-- **MongoDB Atlas**: `MONGODB_PASSWORD` (cluster `cluster0.y3qtgdm.mongodb.net`)
-- **Clerk**: `CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`
-- **Redis Cloud**: `REDIS_HOST=redis-11976.crce275.eu-west3-1.gcp.cloud.redislabs.com`, `REDIS_PORT=11976`, `REDIS_PASSWORD`
-- **Telegram**: `TELEGRAM_TOKEN`, `TELEGRAM_ID`
-- **Lemon Squeezy**: `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, e i 3 `LEMONSQUEEZY_VARIANT_*`
+- **MongoDB Atlas** (`MONGODB_PASSWORD`, `MONGODB_URL`)
+- **Clerk** (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `VITE_CLERK_PUBLISHABLE_KEY`)
+- **Redis Cloud** (`REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`)
+- **Telegram** (`TELEGRAM_TOKEN`, `TELEGRAM_ID`)
+- **Lemon Squeezy** (`LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_STORE_ID`, `LEMONSQUEEZY_WEBHOOK_SECRET`, e i 3 `LEMONSQUEEZY_VARIANT_*`)
+- **Cloudflare R2** (`R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BASE_URL`)
+- **Cowork** (`COWORK_API_KEY`, `COWORK_PROJECT_PATH`)
 
-`hcaire-docs` non ha `.env` proprio: non ne ha bisogno per ora.
+`hcaire-docs` non ha `.env` proprio.
 
-### Cartella contenuti `CONTENT_BASE_PATH`
+### Cartelle contenuti fuori repo
 
-Il verticale **HCAIRE** e **Sviluppo Bambino** legge contenuti markdown da una cartella **esterna alla repo**:
+- **`CONTENT_BASE_PATH`** — fallback markdown per HCAIRE/Sviluppo Bambino (vedi `docs/10-architecture/local-cowork-bridge.md`).
+- **`PIPELINE_SOURCE` / `PIPELINE_INPUT`** — output/input per `scripts/sync-pipeline.mjs` (artefatti già committati in `client/public/pipeline/`).
+- **Cowork project path** (`COWORK_PROJECT_PATH`) — directory esterna dove gira la CLI Cowork triggerata dal Telegram bot.
 
-- Path corrente: `C:/Users/nnmrd/Documents/Claude/Projects/HCAIRE Site/sezioni/`
-- Configurato via env `CONTENT_BASE_PATH` (server/.env)
-- Non è in git
-
-Sulla nuova macchina: copiare la cartella e impostare `CONTENT_BASE_PATH` al nuovo path.
-
-### Cartella sorgente pipeline produzioni
-
-Lo script `scripts/sync-pipeline.mjs` legge artefatti JSON da:
-
-- Output: `C:/Users/nnmrd/Documents/Claude/Projects/Sviluppo Bambino/output/produzioni` (override env `PIPELINE_SOURCE`)
-- Input esterni: `C:/Users/nnmrd/Documents/Claude/Projects/Sviluppo Bambino/input/produzioni` (override env `PIPELINE_INPUT`)
-
-Anche queste sono fuori repo. Da copiare se vuoi rieseguire `npm run sync-pipeline`. Gli artefatti già sincronizzati vivono in `client/public/pipeline/` e **sono in git**, quindi per la sola visualizzazione non serve toccare le sorgenti.
-
-## 5. Setup sulla nuova macchina
-
-Sequenza minima:
+## 5. Setup su nuova macchina
 
 ```bash
-# 1. Repo
-git clone https://github.com/stfnbssl/hcaire-blog.git
+# 1. Clona i due repo come sibling
+git clone https://github.com/stfnbssl/hcaire.git
 git clone https://github.com/stfnbssl/hcaire-docs.git
 
-# 2. Copia/ricostruisci .env
-cp hcaire-blog/server/.env.example hcaire-blog/server/.env  # poi riempi i valori
-cp hcaire-blog/client/.env.example hcaire-blog/client/.env  # poi riempi i valori
+# 2. Ricostruisci .env nell'app
+cp hcaire/server/.env.example hcaire/server/.env
+cp hcaire/client/.env.example hcaire/client/.env
+cp hcaire/local/.env.example hcaire/local/.env
+# poi riempi i valori
 
-# 3. Copia la cartella contenuti su un path locale
-#    (es. ~/Documents/HCAIRE/sezioni/) e adegua CONTENT_BASE_PATH
-
-# 4. Install
-cd hcaire-blog && npm install
+# 3. Install
+cd hcaire && npm install
 cd ../hcaire-docs && npm install
 
-# 5. Avvia
-cd ../hcaire-blog && npm run dev          # avvia server (3018) + client (5173) + local sidecar
-cd ../hcaire-docs && npm run start        # avvia documentazione su http://localhost:3000
+# 4. Avvia
+cd ../hcaire && npm run dev          # server 3018 + client 5173 + local sidecar
+cd ../hcaire-docs && npm run start   # documentazione su http://localhost:3000
 ```
 
 **Versioni richieste**: Node ≥ 18 (testato con Node 24, npm 11).
 
-## 6. Piano residuo (cosa resta da fare)
+## 6. Pubblicazione documentazione
 
-### Fase 2 — Architettura reale ✓ completata
+- `npm run start` → dev server (`http://localhost:3000`)
+- `npm run build` → output statico in `build/`
+- URL di produzione previsto: `https://docs.hcaire.ai` (deploy ancora da configurare; opzioni: Cloudflare Pages, GitHub Pages, Railway statico)
 
-Le 9 pagine in `docs/10-architecture/` sono scritte e la build è verde. I tre diagrammi Mermaid sono integrati. Aggiornata con i chiarimenti del proprietario (sessione 2026-05-05 macchina nuova):
+## 7. Punti aperti
 
-- **Deployment**: `deployment.md` aggiornato con **Railway** come PaaS del server. Worker `local/` confermato girare solo sul portatile (vincolo strutturale: Cowork CLI è solo locale).
-- **Local — ponte Cowork**: nuova pagina `local-cowork-bridge.md` dedicata. Copre i 3 casi d'uso (articoli blog, letture critiche, produzioni Sviluppo Bambino), il pattern generalizzabile per nuovi casi, e la verifica esplicita che **ngrok non è presente nel codice** (Telegram in long-polling, no webhook).
-- **Auth legacy**: confermato dead code (`routes/auth.ts`, `middleware/auth.ts`). FE non chiama più `/api/login`/`/api/logout`. Pronto per essere rimosso, vedi `autenticazione.md` §7.
+Tracciati come `:::note Da confermare` nei file o in `docs/90-todo/`:
 
-### Sezione TODO ✓ avviata
-
-Nuova area `docs/90-todo/` per aspetti non ancora consolidati. Prima voce: `migrazioni-mongodb.md` con descrizione del problema, 5 strategie candidate (`migrate-mongo`, version field + custom, Atlas triggers, lazy migration, script ad-hoc in `scripts/`), raccomandazione di partenza ibrida e domande aperte da rispondere prima di scegliere.
-
-### Fase 3 — Schede modulo ✓ completata
-
-10 schede scritte in `docs/20-modules/` seguendo lo schema fisso (Scopo / Responsabilità / File / Componenti / Flussi / Dati / Dipendenze / Criticità / Test):
-
-- `autenticazione.md` (Clerk + apiKey + dead code legacy)
-- `contenuti.md` (CRUD blog, paywall plus, /import via api-key)
-- `navigation.md` (mix statico/dinamico)
-- `account.md` (pagina /account)
-- `subscriptions.md` (Lemon Squeezy: status/checkout/portal/change-plan/sync + webhook HMAC)
-- `admin-cms.md` (dashboard, site-config, site-content, requests, workflow log)
-- `hcaire.md` (verticale HCAIRE: cascata index→standalone→subsection)
-- `letture.md` (10 step pipeline, integrato con [Local — ponte Cowork](./docs/10-architecture/local-cowork-bridge.md))
-- `sviluppo-bambino/narrativa.md` (18 pagine narrative + 22 endpoint)
-- `sviluppo-bambino/corsi-f1-f2.md` (slide React, F3 fuori scope)
-
-In aggiunta, durante la stesura sono state corrette **inaccuratezze trascinate da Fase 2**:
-
-- Endpoint subscription: era `/api/subscriptions/me` → è `/api/subscriptions/status` (corretto in 6 file).
-- Site config status: era `'test' | 'live'` → è `'test' | 'production'` (corretto in 4 file).
-
-### Fase 4 — Automazione ◐ parziale
-
-**Implementato:**
-
-- **TypeDoc** generato automaticamente da `../hcaire-blog/server/src/` via `npx typedoc` configurato in `typedoc.json`. Output in `static/typedoc/` (gitignored, ~7.4 MB / 298 file). Esposto a `/typedoc/`.
-- **OpenAPI 3.1** hand-written in `static/openapi.yaml` (~17 path stabili: contents, navigation, subscriptions, site-config, site-content, letture, webhook LS). Rendering Redoc via plugin `redocusaurus`, esposto a `/api-reference/`.
-- **Script `sync-docs`** in `scripts/sync-docs.mjs`: verifica sibling layout, esegue TypeDoc, controlla openapi.yaml, riporta riepilogo. Comando `npm run sync-docs`.
-- **4 pagine docs** in `docs/30-api/`: index, openapi, typedoc, storybook.
-
-**Non implementato (intenzionalmente):**
-
-- **Storybook**: documentato in `docs/30-api/storybook.md` come proposta. Decisione: aspettare uno dei tre trigger (team frontend > 1, refactor verso design system, estrazione libreria). Costo/beneficio attuale basso per via dei componenti corso-fase\* poco riutilizzabili.
-
-**Aggiunte in `package.json` di hcaire-docs:**
-
-- `typedoc` (devDep) — generatore.
-- `redocusaurus` (dep) — preset Docusaurus per Redoc.
-- Script `npm run sync-docs` e `npm run typedoc`.
-
-**Setup su nuova macchina** (vedi anche §5):
-
-```bash
-cd hcaire-docs && npm install
-npm run sync-docs    # genera static/typedoc/ — DEVE girare prima del primo build
-npm run build        # ora include /typedoc/ + /api-reference/
-```
-
-### Fase 5 — Pubblicazione
-
-Già funzionante in locale (`npm run start`). Eventuale deploy futuro su Cloudflare Pages o GitHub Pages.
-
-## 7. Punti aperti / da chiarire (rilevati esplorando il codice)
-
-Lasciati come `:::note Da confermare` o "Da verificare in Fase 2" nei file:
-
-1. **Auth legacy**: `server/src/middleware/auth.ts` e `server/src/routes/auth.ts` sembrano residui dell'epoca pre-Clerk; `JWT_SECRET` ancora citato in `.env.example`. Da verificare se ancora referenziati o rimuovibili.
-2. **Worker `local/`**: cosa subscribe / cosa pubblica via Redis, come si coordina con Express. Capitolo dedicato in Fase 2.
-3. **Schemi messaggi Redis**: oggi nessuna documentazione esplicita degli eventi `pipeline:*` e `letture:*`.
-4. **Schemi JSON pipeline**: niente JSON Schema esplicito, solo TS interface lato lettura (vedi §8.2 di `produzioni.md`).
-5. **`obiettivi-funzionali.md`**: stub deliberato. Richiede input di prodotto, non si ricava dal codice.
+1. **Auth legacy** (`server/src/routes/auth.ts`, `middleware/auth.ts`): dead code, candidato alla rimozione.
+2. **Schemi messaggi Redis**: i canali (`article:new`, `bartleby:trace:new`, `pipeline:step:execution:complete`, `letture:*`) non hanno ancora schema esplicito documentato.
+3. **JSON Schema pipeline**: validazione AJV solo lato server; nessuno schema pubblicato per consumatori esterni.
+4. **Migrazioni MongoDB**: nessun framework adottato (vedi `docs/90-todo/migrazioni-mongodb.md`).
+5. **Storybook**: non implementato (vedi `docs/30-api/storybook.md`).
+6. **Deploy docs**: target finale da decidere.
 
 ## 8. Note importanti
 
-### Il `CLAUDE.md` di `hcaire-blog` è significativamente stale
+- Il `CLAUDE.md` di `hcaire` è la sorgente autoritativa per le convenzioni del codice applicativo, ma può andare stale rispetto allo stato reale; la documentazione qui descrive il **codice che gira**, non l'intent originale.
+- La memoria persistente di Claude Code è in `~/.claude/projects/...` (path dipendente dal workspace); va eventualmente sincronizzata fra macchine.
 
-Al 2026-05-05 il `CLAUDE.md` di `hcaire-blog` descrive un'autenticazione JWT con login `admin`/`admin` e un'app fondamentalmente "blog semplice". L'**implementazione reale** è molto più articolata: Clerk, Lemon Squeezy, Redis pub/sub, Telegram, Cloudflare, tre workspace, sette verticali.
-
-I dettagli reali sono in `docs/00-overview/inventario.md` di questa repo. Non fidarsi del CLAUDE.md per fatti specifici di auth, scope o stack.
-
-### Memoria Claude Code
-
-Esiste una memoria persistente in `C:\Users\nnmrd\.claude\projects\C--my-projects-hcaire-blog\memory\` che include `project_hcaire.md` (contesto di progetto) e `reference_redis.md` (endpoint Redis Cloud). Sulla nuova macchina la memoria è in un path equivalente ma diverso (basato sul nuovo workspace path); va eventualmente ricreata o copiata se vuoi che le sessioni Claude future abbiano la stessa partenza.
-
-### Documento di pianificazione originale
-
-Il prompt che ha guidato tutto il setup vive in `hcaire-docs/prompts/Sistema di documentazione della webapp di HCAIRE.md`. Tracciato in git.
-
-## 9. Comandi rapidi di verifica (su nuova macchina)
+## 9. Verifiche rapide
 
 ```bash
-# Verificare che la documentazione builda
+# Build documentazione
 cd hcaire-docs && npm run build
-# Esito atteso: "[SUCCESS] Generated static files in build."
-# Warning ignorabili: "Cannot infer the update date" (file appena committati), "Critical dependency: vscode-languageserver-types" (transitiva di Mermaid).
+# atteso: "[SUCCESS] Generated static files in build."
 
-# Avviare il sito documentale
+# Dev server documentazione
 npm run start    # http://localhost:3000
 
-# Verificare che l'app gira
-cd ../hcaire-blog && npm run dev
-# Esito atteso: server su 3018, client su 5173, local sidecar attivo (Telegram + Redis subscribers).
+# App applicativa
+cd ../hcaire && npm run dev
+# atteso: server 3018, client 5173, local sidecar attivo
 ```

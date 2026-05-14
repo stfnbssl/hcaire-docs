@@ -95,7 +95,7 @@ In modalità test l'intero blocco "Abbonamento" è nascosto.
 
 ### 5.1 Caricamento
 
-1. `useSubscription()` espone `subscription`, `isActive`, `loading`. Sotto il cofano: ha già fatto `GET /api/subscriptions/status` al login (vedi [Architettura → Stato applicativo §5](../10-architecture/stato-applicativo.md#5-subscriptionprovider)).
+1. `useSubscription()` espone `subscription`, `isActive`, `loading`. Sotto il cofano: ha già fatto `GET /api/subscriptions/status` al login (vedi [Architettura → Stato applicativo](../10-architecture/stato-applicativo.md)).
 2. La pagina rispecchia lo stato.
 
 ### 5.2 Apertura portale Lemon Squeezy

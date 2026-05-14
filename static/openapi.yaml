@@ -1,23 +1,25 @@
 openapi: 3.1.0
 info:
-  title: HCAIRE Blog — REST API
-  version: 0.1.0
+  title: HCAIRE — REST API
+  version: 0.2.0
   description: |
-    Specifica OpenAPI 3.1 dell'API REST esposta da `hcaire-blog/server` (Express).
+    Specifica OpenAPI 3.1 dell'API REST esposta da `hcaire/server` (Express).
 
     **Stato**: hand-written, copre gli endpoint pubblici e admin core. Endpoint dei verticali narrativi
-    (`/api/hcaire/*`, `/api/sviluppo-bambino/*`) e della pipeline (`/api/pipeline/*`, `/api/admin/letture/*/run`)
-    sono documentati nelle relative schede modulo (vedi `docs/20-modules/`).
+    (`/api/hcaire/*`, `/api/metodo/*`, `/api/sviluppo-bambino/*`), della pipeline orchestrazione
+    (`/api/pipeline/*`), del catalogo (`/api/admin/catalog/*`), di Bartleby (`/api/bartleby/*`),
+    dell'archivio temi e dei job admin sono documentati nelle relative schede modulo
+    (vedi `docs/20-modules/`).
 
     Per i dettagli architetturali (middleware, ordine di mount, auth) vedi
-    [Architettura → Backend](/architecture/backend) e [Architettura → Routing](/architecture/routing).
+    Architettura → Backend e Architettura → Routing.
   license:
     name: Proprietary
 servers:
   - url: http://localhost:3018
     description: Dev server locale
-  - url: https://api.hcaire.example
-    description: Produzione (Railway) — host segnaposto
+  - url: https://api.hcaire.ai
+    description: Produzione (Railway)
 tags:
   - name: contents
     description: Articoli del blog (CRUD + paywall plus)

@@ -4,10 +4,10 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'HCAIRE — Documentazione tecnica',
-  tagline: 'Documentazione del monorepo hcaire-blog',
+  tagline: 'Documentazione del monorepo hcaire (hcaire.ai)',
   favicon: 'img/favicon.ico',
 
-  url: 'http://localhost',
+  url: 'https://docs.hcaire.ai',
   baseUrl: '/',
 
   organizationName: 'stfnbssl',

@@ -17,7 +17,7 @@ Questa area raccoglie i riferimenti **generati** o **semi-generati** per integra
 ## Pipeline di generazione
 
 ```
-hcaire-blog/                  hcaire-docs/                 build/
+hcaire/                       hcaire-docs/                 build/
 ├── server/src/      ─────►   typedoc                ──►   /typedoc/  (HTML statico)
 │
 └── (note di dominio)         openapi.yaml           ──►   /api-reference/  (Redoc)
@@ -25,10 +25,10 @@ hcaire-blog/                  hcaire-docs/                 build/
                               docs/30-api/*.md       ──►   pagine dock
 ```
 
-Le pagine MDX sotto `docs/30-api/` raccontano **il perché** e **come usare** ciascun artefatto. La generazione vera e propria è orchestrata dallo script `scripts/sync-docs.mjs` (vedi [TypeDoc — Sync](./typedoc.md#sync)).
+Le pagine MDX sotto `docs/30-api/` raccontano **il perché** e **come usare** ciascun artefatto. La generazione è orchestrata dallo script `scripts/sync-docs.mjs` (vedi [TypeDoc — Sync](./typedoc.md#sync)).
 
 ## Convenzioni
 
-- **OpenAPI** copre solo gli endpoint **stabili** dell'API REST. Endpoint dei verticali narrativi (HCAIRE, Sviluppo Bambino) e di pipeline interna (`/api/pipeline/*`, `/api/admin/letture/*/run`) vivono nei rispettivi moduli (vedi `docs/20-modules/`) perché il loro contratto è in evoluzione.
-- **TypeDoc** copre solo `server/`. `client/` è escluso perché molte API sono "private" del SPA e l'utilità di documentarle è bassa. `local/` è coperto solo per i constants/handler della pipeline.
-- **Storybook**, se mai introdotto, coprirà `client/src/components/` esclusi quelli di `corso-fase*` (slide didattiche, non componenti riutilizzabili).
+- **OpenAPI** copre il subset stabile dell'API REST (contenuti pubblici, navigazione, subscriptions, site-config/content, letture, webhook). Per gli endpoint dei verticali narrativi (HCAIRE, Metodo, Sviluppo Bambino), della pipeline interna (`/api/pipeline/*`) e di Bartleby, il contratto vive nei rispettivi moduli (`docs/20-modules/`) perché in evoluzione.
+- **TypeDoc** copre solo `server/`. `client/` è escluso perché molte API sono "private" del SPA. `local/` non è coperto direttamente da TypeDoc (vedi il modulo [Local — ponte Cowork](../10-architecture/local-cowork-bridge.md)).
+- **Storybook**, se mai introdotto, coprirà `client/src/components/` esclusi quelli di `corso-fase{1,2,3}/` (slide didattiche, non componenti riutilizzabili).

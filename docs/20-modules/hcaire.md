@@ -5,7 +5,7 @@ sidebar_position: 7
 
 # Modulo HCAIRE
 
-Scheda funzionale del **verticale HCAIRE** (Human-Centred AI Research and Education): la sezione "Laboratorio" del sito, dedicata alla narrativa del progetto, al manifesto, al metodo, ai protocolli. Tutto il contenuto è **markdown statico** letto dal filesystem del server tramite `staticContentReader`.
+Scheda funzionale del **verticale HCAIRE** (Human-Centred AI Research and Education): la sezione "Laboratorio" del sito, dedicata alla narrativa del progetto, al manifesto, ai protocolli. Il contenuto è servito **da MongoDB (`SiteContent`)** con fallback su markdown statico letto dal filesystem (`CONTENT_BASE_PATH`) tramite `staticContentReader`.
 
 ## 1. Scopo
 
@@ -26,14 +26,16 @@ Sono pagine statiche dal punto di vista funzionale (no interazione utente, no sc
 
 ## 3. Sorgenti dati
 
-Tutto vive sotto **`CONTENT_BASE_PATH`** (env, default `server/content/`):
+**Sorgente primaria — MongoDB `SiteContent`**: documenti slug-based con `namespace='hcaire'` (es. `hcaire/index`, `hcaire/manifesto`, `hcaire/manifesto-teorico`, `hcaire/protocolli/:slug`). Vedi [Modulo SiteConfig + SiteContent](./site-config-content.md).
+
+**Fallback FS** (solo se DB vuoto o slug mancante): file markdown sotto `CONTENT_BASE_PATH/hcaire/`:
 
 ```
 $CONTENT_BASE_PATH/
 └── hcaire/
     ├── index.md              # contiene H2 → sezioni dinamiche
-    ├── manifesto.md            # manifesto AI (uso dell'AI nelle scienze umane)
-    ├── manifesto-teorico.md    # manifesto teorico (esplicitazione dei quadri della ricerca)
+    ├── manifesto.md            # manifesto AI
+    ├── manifesto-teorico.md    # manifesto teorico
     ├── metodo.md
     ├── ia-centrata-sull-umano.md
     ├── agentic-shift.md
@@ -42,10 +44,10 @@ $CONTENT_BASE_PATH/
     ├── bartleby-preview.md
     └── protocolli/
         ├── index.md
-        └── <slug>.md          # un file per protocollo
+        └── <slug>.md
 ```
 
-⚠️ Su un'installazione con `CONTENT_BASE_PATH` mancante (es. su Railway senza la cartella montata) le rotte `/api/hcaire/*` rispondono con `isEmpty: true` e il FE mostra `<StubNotice>`. Vedi [Architettura → Deployment §3](../10-architecture/deployment.md#3-backend--railway).
+⚠️ Su un'installazione con `CONTENT_BASE_PATH` mancante (es. Railway senza la cartella montata) e contenuto non popolato in `SiteContent`, le rotte `/api/hcaire/*` rispondono con `isEmpty: true` e il FE mostra `<StubNotice>`. Per produzione conviene popolare il contenuto in MongoDB via `/admin/testi`.
 
 ## 4. File coinvolti
 

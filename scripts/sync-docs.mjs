@@ -2,7 +2,7 @@
 // sync-docs — orchestratore della generazione automatica della documentazione.
 //
 // Cosa fa:
-//   1. Verifica che `../hcaire-blog/server/` esista (TypeDoc legge da sibling).
+//   1. Verifica che `../hcaire/server/` esista (TypeDoc legge da sibling).
 //   2. Esegue TypeDoc con `typedoc.json` → output in `static/typedoc/`.
 //   3. Verifica che `static/openapi.yaml` esista (warning se mancante).
 //   4. Stampa un riepilogo.
@@ -12,7 +12,7 @@
 //
 // Note:
 //   - `static/typedoc/` è gitignored. Va rigenerato dopo ogni clone.
-//   - In CI conviene fare checkout di entrambi i repo (hcaire-docs + hcaire-blog)
+//   - In CI conviene fare checkout di entrambi i repo (hcaire-docs + hcaire)
 //     come sibling prima di invocare questo script.
 
 import { spawnSync } from 'node:child_process';
@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const SIBLING_BLOG = resolve(ROOT, '..', 'hcaire-blog');
+const SIBLING_APP = resolve(ROOT, '..', 'hcaire');
 
 function header(title) {
   console.log('');
@@ -73,13 +73,13 @@ function dirSizeMB(dir) {
 
 header('Sibling check');
 
-const blogServerSrc = resolve(SIBLING_BLOG, 'server', 'src');
-if (!existsSync(blogServerSrc)) {
-  fail(`hcaire-blog non trovato come sibling: atteso ${blogServerSrc}`);
-  console.error('   Assicurati che hcaire-blog/ e hcaire-docs/ siano cartelle sorelle.');
+const appServerSrc = resolve(SIBLING_APP, 'server', 'src');
+if (!existsSync(appServerSrc)) {
+  fail(`hcaire non trovato come sibling: atteso ${appServerSrc}`);
+  console.error('   Assicurati che hcaire/ e hcaire-docs/ siano cartelle sorelle.');
   process.exit(1);
 }
-ok(`hcaire-blog trovato in ${SIBLING_BLOG}`);
+ok(`hcaire trovato in ${SIBLING_APP}`);
 
 // ─── 2. TypeDoc ─────────────────────────────────────────────────────────────
 

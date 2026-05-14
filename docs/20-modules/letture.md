@@ -257,7 +257,7 @@ I file JSON `output_data` sono embeddati anche in `Opera.pipeline.step_X.output`
 - **Filesystem condiviso fra worker e server**: oggi il server è su Railway, il worker `local/` sul portatile. Il server **non ha accesso** al filesystem dove Cowork scrive. Per leggere `articolo-finale.md` dopo lo step 5d, una delle due:
   - Il worker invia anche il contenuto del file dentro l'evento Redis `step.completed` (oggi non è chiaro se lo fa).
   - Si introduce un upload del file dal worker al server (es. via API admin con api-key).
-  Vedi anche [Architettura → Backend §5](../10-architecture/backend.md#5-bus-redis-pipeline) per il protocollo.
+  Vedi anche [Architettura → Backend](../10-architecture/backend.md) per il protocollo.
 - **`MOCK_MODE`** è `true` di default in `lettureConstants.ts`. Le esecuzioni reali richiedono `PIPELINE_MOCK_MODE=false` esplicito nel `.env` del worker.
 - **Validazione AJV**: implementata in `lettureSchemaValidator.ts` ma applicata solo a fine step. Errori di formato dell'output Cowork sfuggono fino al render UI.
 - **Singolo concorrente per step**: `LettureCommandHandler.activeExecutions` è un `Map` per execution_id, ma se l'admin clicca "Run" velocemente sullo stesso step parte una seconda execution con id diverso e il pre-flight fallirebbe (o viceversa).

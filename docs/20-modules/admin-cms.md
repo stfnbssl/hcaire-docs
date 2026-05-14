@@ -5,48 +5,47 @@ sidebar_position: 6
 
 # Modulo Admin CMS
 
-Scheda funzionale dell'**area amministrativa** sotto `/admin/*`. Cinque pagine, tutte gated da `<AdminRoute>` lato FE e `requireAdmin` lato BE. Per la primitiva di gating si rimanda al modulo [Autenticazione](./autenticazione.md).
+Scheda funzionale dell'**area amministrativa** sotto `/admin/*`. Tutte le pagine sono gated da `<AdminRoute>` lato FE e `requireAdmin` lato BE. Per la primitiva di gating vedi [Autenticazione](./autenticazione.md).
 
 ## 1. Scopo
 
-Permettere all'admin di:
+Centralizzare in un layout unico (`<AdminLayout>`) tutte le operazioni admin: gestione contenuti, configurazione sito, testi editabili, richieste articolo, workflow log, letture critiche, capitoli degli assi, catalogo bibliografico, job orchestration, archivio temi, servizi.
 
-- Gestire gli articoli del blog (CRUD).
-- Configurare la modalità del sito (`test` / `production`).
-- Editare i testi UI internazionalizzati (overlay sui default JSON bundled).
-- Vedere le richieste articolo arrivate da Telegram.
-- Consultare il log di workflow degli articoli e di Bartleby.
-- Importare articoli prodotti da Cowork (cartella locale → form).
+## 2. Pagine
 
-## 2. Responsabilità
+| Path | Componente | Cosa fa |
+|------|------------|---------|
+| `/admin` | `AdminDashboard` | CRUD articoli blog + import Cowork |
+| `/admin/workflow` | `WorkflowLog` | Log eventi workflow (article + Bartleby + pipeline) |
+| `/admin/requests` | `AdminRequests` | Tracce articoli Telegram (`ArticleRequest`) |
+| `/admin/site-config` | `AdminSiteConfig` | Toggle test/production, maintenance mode |
+| `/admin/testi` | `AdminSiteContent` | Editor `SiteContent` slug-based (footer, disclaimer, sezioni narrative) |
+| `/admin/servizi` | `AdminServices` | Dashboard servizi backend (health, stats) |
+| `/admin/letture[/nuova\|/:slug]` | `AdminLetture*` | CRUD opere + run step pipeline |
+| `/admin/assi` | `AdminAssi` | Gestione assi strutturali (metadati) |
+| `/admin/assi/rebuild` | `AdminAssiRebuild` | Trigger rebuild assi da archivio FS |
+| `/admin/assi/capitoli` | `AdminAssiChapters` | Lista capitoli con filtri per asse |
+| `/admin/assi/capitoli/:axisSlug/:slug` | `AdminAssiChapterEdit` | Editor capitolo (body, references, footnotes, sections) |
+| `/admin/catalogo` | `AdminCatalogo` | CRUD autori/libri + upload immagini R2 |
+| `/admin/skills` | `AdminSkills` | CRUD `Skill` (legacy non-Bartleby) |
+| `/admin/plugins` | `AdminPlugins` | CRUD `Plugin` di orchestrazione |
+| `/admin/job-definitions` | `AdminJobDefinitions` | CRUD definizioni di job |
+| `/admin/jobs` | `AdminJobs` | CRUD richieste di job |
 
-- Centralizzare in un unico layout (`<AdminLayout>`) le operazioni admin.
-- Riutilizzare i moduli funzionali esistenti ([Contenuti](./contenuti.md), [Letture](./letture.md), ecc.) tramite endpoint dedicati `/api/admin/*` o policy `requireAdmin`.
-- Gestire l'import di artefatti Cowork via File System Access API (Chrome/Edge) con fallback double-input per Firefox.
+Tutte lazy-loaded in `App.tsx` (vedi [Frontend](../10-architecture/frontend.md)).
 
-## 3. Pagine
+Anche `/archivio/temi*` è di fatto admin (gated): vedi [Archivio Temi](./archivio-temi.md).
 
-| Path | Componente | File |
-|------|------------|------|
-| `/admin` | `AdminDashboard` | `pages/AdminDashboard.tsx` |
-| `/admin/workflow` | `WorkflowLog` | `pages/WorkflowLog.tsx` |
-| `/admin/requests` | `AdminRequests` | `pages/AdminRequests.tsx` |
-| `/admin/site-config` | `AdminSiteConfig` | `pages/AdminSiteConfig.tsx` |
-| `/admin/testi` | `AdminSiteContent` | `pages/AdminSiteContent.tsx` |
-| `/admin/letture/*` | `AdminLetture` + figli | vedi modulo [Letture](./letture.md) |
+## 3. AdminDashboard (`/admin`)
 
-Tutte sono import lazy in `App.tsx` (vedi [Architettura → Frontend §4](../10-architecture/frontend.md#4-lazy-loading)).
-
-## 4. AdminDashboard (`/admin`)
-
-Tabella articoli del CMS con CRUD completo.
+Tabella articoli blog con CRUD completo.
 
 ### Componenti
 
 - Tabella MUI con colonne: Titolo, Slug, Categoria, Accesso (chip Free/Plus), Stato (chip Pubblicato/Bozza), Data, Azioni.
-- Azioni per riga: Visualizza (link a `/blog/:slug`), Modifica, Elimina (con dialog di conferma).
+- Azioni per riga: Visualizza (`/blog/:slug`), Modifica, Elimina (con dialog conferma).
 - Bottoni in alto: "Carica articolo" (import Cowork), "+ Nuovo articolo".
-- Dialog `ContentForm` per crea/modifica con campi: slug (required), titolo (required), descrizione, contenuto markdown (10 righe), categoria, tags (comma-separated), autore, isPublished, accessType.
+- Dialog `ContentForm` per crea/modifica: slug, titolo, descrizione, contenuto markdown (10 righe), categoria, tags (CSV), autore, `isPublished`, `accessType`.
 
 ### Import Cowork
 
@@ -58,190 +57,206 @@ cartella-articolo/
 └── metadata.json        # { slug, titolo, descrizione, categoria, tags }
 ```
 
-Click "Carica articolo" → `window.showDirectoryPicker()` (File System Access API): l'admin sceglie la cartella → l'app legge i due file → apre il `ContentForm` precompilato con `isPublished: false` (parte come bozza, da revisionare prima della pubblicazione).
+Click "Carica articolo" → `window.showDirectoryPicker()` (File System Access API). L'app legge i due file e apre il form precompilato con `isPublished: false` (parte come bozza).
 
-**Fallback Firefox** (no FSA): due `<input type="file">` nascosti chiedono in sequenza `articolo.md` → `metadata.json`. Stesso risultato.
+**Fallback Firefox** (no FSA): due `<input type="file">` in sequenza per `articolo.md` e `metadata.json`.
 
-Se `metadata.json` manca o è invalido: si apre il form con il solo `contenuto`, l'admin compila a mano.
+Pattern fully automatic alternativo: Cowork chiama `POST /api/contents/import` con `COWORK_API_KEY`. Vedi [Modulo Contenuti](./contenuti.md) e [Integrazione Telegram + Cowork](./integrazione-telegram-cowork.md).
 
 ### Endpoint usati
 
-- `GET /api/contents/admin` (lista completa, anche bozze)
-- `POST /api/contents` (crea)
-- `PUT /api/contents/:id` (aggiorna)
-- `DELETE /api/contents/:id` (elimina)
+- `GET /api/admin/contents` (lista, anche bozze)
+- `POST /api/contents` (crea, admin)
+- `PUT /api/contents/:id` (aggiorna, admin)
+- `DELETE /api/contents/:id` (elimina, admin)
 
-Vedi modulo [Contenuti](./contenuti.md) per i dettagli.
+## 4. WorkflowLog (`/admin/workflow`)
 
-## 5. WorkflowLog (`/admin/workflow`)
-
-Visualizza il log eventi di tutti i workflow di generazione contenuti (article + bartleby).
+Visualizza il log degli eventi di tutti i workflow di generazione contenuti.
 
 ### Modello `WorkflowLog`
 
 ```ts
 {
-  workflow_type:    'article' | 'bartleby';
-  articleRequestId?: ObjectId;       // article workflow
-  traceId?:          string;          // bartleby workflow
-  testoPreview:      string;          // primi 80 char del testo
-  step:              string;          // es. 'redis_published', 'coworker_started', 'article_published'
-  actor:             string;          // 'server' | 'local' | 'worker'
-  message:           string;
-  requestStatus:     string;          // 'pending'|'processing'|'done'|'error'
-  createdAt:         Date;
+  workflow_type:    'article' | 'bartleby' | 'pipeline' | 'letture';
+  resourceId:       ObjectId | string;   // articleRequestId, traceId, executionId
+  testoPreview:     string;              // primi N char
+  step:             string;              // es. 'redis_published', 'coworker_started', 'article_published'
+  actor:            string;              // 'server' | 'local' | 'worker' | 'webhook'
+  message:          string;
+  status:           'pending'|'processing'|'done'|'error';
+  createdAt:        Date;
 }
 ```
 
-Indici: `articleRequestId`, `traceId`, `(workflow_type, createdAt desc)`, `createdAt desc`.
+Indici per `resourceId`, `(workflow_type, createdAt desc)`, `createdAt desc`.
 
-Endpoint: `GET /api/article-requests/logs` (admin).
+Endpoint: `GET /api/article-requests/logs` (admin) per il log articoli; query simili per altri tipi.
 
-## 6. AdminRequests (`/admin/requests`)
+## 5. AdminRequests (`/admin/requests`)
 
-Tabella delle `ArticleRequest`: tracce articolo arrivate dal bot Telegram, in attesa di essere processate da Cowork.
+Tabella delle `ArticleRequest`: tracce dal bot Telegram in attesa di Cowork.
 
-### Endpoint
+Endpoint:
 
 - `GET /api/article-requests` (admin) — lista
-- `POST /api/article-requests/:id/log` (api-key) — usato dal worker per appendere log
+- `POST /api/article-requests/:id/log` (API key) — usato dal worker per log
 
-Vedi [Local — ponte Cowork §2.1](../10-architecture/local-cowork-bridge.md#21-generazione-articoli-del-blog) per il flusso.
+Vedi [Local — ponte Cowork](../10-architecture/local-cowork-bridge.md) e [Integrazione Telegram + Cowork](./integrazione-telegram-cowork.md).
 
-## 7. AdminSiteConfig (`/admin/site-config`)
+## 6. AdminSiteConfig (`/admin/site-config`)
 
-Singolo toggle `status: 'test' | 'production'`. Comporta:
+Toggle `status: 'test' | 'production'` + `maintenanceMode`.
 
-- **`test`** (default): paywall visibile come banner ma contenuto sempre leggibile (ottimo per testare la UX paywall senza piano attivo). Sezione "Abbonamento" su `/account` nascosta. Bottoni "Abbonati" nascosti.
-- **`production`**: paywall pieno. Tutti i CTA Lemon Squeezy attivi.
+- **`test`** (default): paywall come banner ma contenuto sempre leggibile, sezioni `Abbonamento` su `/account` nascoste, CTA "Abbonati" nascosti.
+- **`production`**: paywall pieno, tutti i CTA Lemon Squeezy attivi.
+- **`maintenanceMode`**: banner globale + eventuale lock dei verticali.
 
-### Schema `SiteConfig`
+Schema `SiteConfig`:
 
 ```ts
 {
-  status: 'test' | 'production';   // default 'test'
-  updatedBy: string;               // clerkUserId di chi ha modificato
+  status: 'test' | 'production';
+  siteTitle: string;
+  siteUrl: string;
+  maintenanceMode: boolean;
+  updatedBy: string;   // clerkUserId
   createdAt, updatedAt
 }
 ```
 
-Collection: `site-config`. C'è **un solo documento** per istanza app (read da `SiteConfig.findOne()`).
+Collection: `site_config` (singleton).
 
-### Endpoint
+Endpoint:
 
-- `GET /api/site-config` (pubblico) — letto al boot da `SiteConfigProvider`
-- `PUT /api/site-config` (admin) — aggiorna lo status
+- `GET /api/site-config` (pubblico, letto al boot da `SiteConfigProvider`)
+- `PUT /api/site-config` (admin)
 
-## 8. AdminSiteContent (`/admin/testi`)
+## 7. AdminSiteContent (`/admin/testi`)
 
-Editor delle stringhe UI internazionalizzate. Le stringhe vivono in due luoghi:
+Editor delle pagine slug-based `SiteContent` (footer, disclaimer, cookies, intro sezioni narrative).
 
-- **Default bundled**: `client/public/locales/{lang}/common.json`. File JSON statici nel bundle.
-- **Overlay DB**: collection `site-content`, modificabile dall'admin per sovrascrivere senza redeploy.
-
-Lookup lato FE (`SiteContentContext.t(key)`):
-
-```
-1. cerca in overrides[lang][key]
-2. se assente, cerca in defaults[key]
-3. fallback: stringa passata come secondo arg, o la chiave stessa
-```
-
-### Schema `SiteContent`
+Schema:
 
 ```ts
 {
-  key:          string;         // unique
-  namespace:    string;         // default 'common'
-  type:         'plain' | 'markdown';
-  description?: string;
-  translations: Map<lang, string>;   // { it: '...', en: '...' }
-  updatedBy:    string;
+  slug: string;        // unique
+  title: string;
+  body: string;        // markdown
+  namespace?: string;  // es. 'footer', 'disclaimer', 'metodo', 'hcaire'
+  updatedBy: string;
   createdAt, updatedAt
 }
 ```
 
-Collection: `site-content`. Indice unico su `key`, indice su `namespace`.
+Endpoint pubblico vs admin:
 
-### Endpoint
+- `GET /api/site-content` (pubblico, paginato + filtri)
+- `GET /api/admin/site-content` (admin, lista completa)
+- `POST /api/admin/site-content` (crea)
+- `PUT /api/admin/site-content/:slug` (aggiorna)
+- `DELETE /api/admin/site-content/:slug` (rimuove)
 
-- `GET /api/site-content` (pubblico) — overlay per il context
-- `GET /api/admin/site-content` (admin) — lista completa per editor
-- `POST /api/admin/site-content` (admin) — crea key
-- `PUT /api/admin/site-content/:key` (admin) — aggiorna
-- `DELETE /api/admin/site-content/:key` (admin) — rimuove
-- `POST /api/admin/site-content/sync` (admin) — sincronizza dai default JSON bundled (popola le key mancanti)
+Vedi anche [Modulo SiteConfig + SiteContent](./site-config-content.md).
 
-L'`AdminSiteContent` mostra tabella + dialog edit per riga + bottone "Sincronizza dai default".
+## 8. AdminServices (`/admin/servizi`)
 
-## 9. Flussi cross-modulo
+Dashboard di salute dei servizi backend: stato connessione DB, Redis, Telegram bot, ultimo evento workflow, conteggi rapidi (articoli, traces, execution pipeline aperte). Utilizzo: monitoraggio operativo.
 
-### 9.1 Importa articolo da Cowork
+## 9. AdminLetture (`/admin/letture[/...]`)
+
+Vedi [Modulo Letture critiche](./letture.md). Include:
+
+- Lista opere (`/admin/letture`)
+- Form nuova opera (`/admin/letture/nuova`)
+- Editor opera con pipeline step (`/admin/letture/:slug`): per ogni step, bottoni run/cancel/reset + log streaming.
+
+## 10. AdminAssi* (`/admin/assi[/...]`)
+
+Vedi [Modulo Assi strutturali](./assi-strutturali.md). Include:
+
+- `AdminAssi` — metadati per asse
+- `AdminAssiRebuild` — trigger rebuild dell'archivio FS in MongoDB
+- `AdminAssiChapters` — lista capitoli con filtri (axis, status)
+- `AdminAssiChapterEdit` — editor capitolo (body markdown, references[], footnotes[], sections[]) con preview e validazione `{{ref:rN}}`
+
+## 11. AdminCatalogo (`/admin/catalogo`)
+
+Vedi [Modulo Catalogo](./catalogo.md). CRUD autori/libri con:
+
+- Upload immagine (autori) / cover (libri) su Cloudflare R2 via multer.
+- Validazione mime/size lato server.
+- Cache-busting URL pubblico.
+
+## 12. AdminSkills / Plugins / JobDefinitions / Jobs
+
+Vedi [Jobs, Skills, Plugins](./jobs-skills-plugins.md).
+
+- `AdminSkills` — CRUD `Skill` (legacy, non Bartleby).
+- `AdminPlugins` — CRUD `Plugin`.
+- `AdminJobDefinitions` — CRUD `JobDefinition` (`research`/`write`/`research-and-write`).
+- `AdminJobs` — CRUD `JobRequest` con stato e risultato.
+
+## 13. Flussi cross-modulo
+
+### 13.1 Import Cowork via dashboard
 
 ```
 Admin click "Carica articolo"
-  ↓
-showDirectoryPicker() oppure fallback double input
-  ↓
-read articolo.md + metadata.json
-  ↓
-openCreateWithData({ ...meta, contenuto, isPublished: false })
-  ↓
-ContentForm pre-popolato → admin revisiona → Salva
-  ↓
-POST /api/contents (auth Clerk admin)
+  ↓ showDirectoryPicker() o fallback double input
+  ↓ leggi articolo.md + metadata.json
+  ↓ openCreateWithData({ ...meta, contenuto, isPublished: false })
+  ↓ ContentForm precompilato → revisiona → Salva
+  ↓ POST /api/contents (Clerk admin)
 ```
 
-Pattern alternativo (fully automatic): Cowork stesso chiama `POST /api/contents/import` con API key — vedi [Contenuti §6.3](./contenuti.md#63-pubblicazione-automatica-cowork).
-
-### 9.2 Spegnere il paywall in modalità test
+### 13.2 Spegnere il paywall in modalità test
 
 ```
-Admin → /admin/site-config → toggle to 'test' → Salva
+Admin → /admin/site-config → toggle 'test' → Salva
   ↓ PUT /api/site-config
-SiteConfigProvider non aggiorna in real-time: serve un refresh manuale (F5) o
-chiamata refresh() dal context (oggi non esposta come trigger UI globale).
-  ↓
-A reload: contenuti plus mostrano banner sobrio + corpo leggibile,
-"Abbonati" CTA nascosti, sezione abbonamento su /account nascosta.
+SiteConfigProvider non aggiorna real-time: serve refresh manuale
+  ↓ a reload: paywall sobrio + corpo leggibile, CTA "Abbonati" nascosti
 ```
 
-## 10. File coinvolti
+## 14. File coinvolti
 
 ### Backend
 
 | File | Ruolo |
 |------|-------|
-| `routes/content.ts` + `controllers/contentController.ts` | CRUD articoli (vedi [Contenuti](./contenuti.md)) |
-| `routes/articleRequests.ts` + `controllers/articleRequestController.ts` | Liste richieste + logs |
-| `routes/siteConfig.ts` + `controllers/siteConfigController.ts` | GET/PUT site-config |
-| `routes/siteContent.ts` + `controllers/siteContentController.ts` | Public + admin CRUD testi |
-| `models/SiteConfig.ts`, `SiteContent.ts`, `ArticleRequest.ts`, `WorkflowLog.ts` | Schemi |
+| `routes/content.ts` + `controllers/contentController.ts` | CRUD articoli |
+| `routes/articleRequests.ts` + `controllers/articleRequestController.ts` | Article requests + logs |
+| `routes/siteConfig.ts` + `controllers/siteConfigController.ts` | GET/PUT singleton |
+| `routes/siteContent.ts` + `controllers/siteContentController.ts` | Public + admin CRUD |
+| `routes/letture.ts` + `controllers/lettureController.ts` | CRUD opere + step run |
+| `routes/assi.ts`, `assiChapters.ts` + service | Capitoli assi |
+| `routes/catalogAuthors.ts`, `catalogBooks.ts` + `catalogService` | Catalogo + R2 |
+| `routes/{skills,plugins,jobDefinitions,jobRequests}.ts` + controllers | Job orchestration |
+| Modelli: `SiteConfig`, `SiteContent`, `ArticleRequest`, `WorkflowLog`, `AssiChapter`, `Author`, `Book`, `Skill`, `Plugin`, `JobDefinition`, `JobRequest` | |
 
 ### Frontend
 
 | File | Ruolo |
 |------|-------|
-| `client/src/components/AdminLayout.tsx` | Layout pagine admin |
-| `pages/AdminDashboard.tsx` | CRUD articoli |
-| `pages/WorkflowLog.tsx` | Log eventi |
-| `pages/AdminRequests.tsx` | Lista ArticleRequest |
-| `pages/AdminSiteConfig.tsx` | Toggle test/production |
-| `pages/AdminSiteContent.tsx` | Editor i18n |
+| `components/AdminLayout.tsx` | Layout pagine admin |
+| `pages/Admin*.tsx` (15+ pagine) | Tutte le pagine admin |
+| `components/admin/{CatalogPicker, QuickCreateCatalogItem, ChapterRefsPanel}.tsx` | Componenti riutilizzati |
 
-## 11. Criticità note
+## 15. Criticità note
 
-- **Refresh manuale dopo cambio site-config**: l'admin deve ricaricare la pagina per vedere il cambio applicato globalmente. Migliorabile esponendo `refresh()` del `SiteConfigContext`.
-- **Niente diff editor / preview** per il markdown su `AdminSiteContent` (solo TextField). Per stringhe `markdown` lunghe è scomodo.
-- **Workflow log non filtrabile**: oggi è una tabella piatta. Per debug di un singolo articolo serve scorrere a mano.
-- **Niente bulk action** sugli articoli (import multiplo, pubblicazione multipla, ecc.).
-- **Import Cowork richiede browser Chromium**: Firefox usa il fallback two-step. Compatibile ma più macchinoso.
+- **Refresh manuale dopo `site-config`**: per vedere il toggle applicato serve ricaricare. Migliorabile esponendo `refresh()` del context.
+- **Workflow log non filtrabile**: tabella piatta, debug a vista.
+- **Niente bulk action** su articoli/capitoli.
+- **`requireAdmin` chatty**: chiamata Clerk per ogni request admin (vedi [Autenticazione](./autenticazione.md)).
+- **Import Cowork richiede Chromium**: Firefox usa il fallback meno fluido.
 
-## 12. Test
+## 16. Test
 
-Nessun test automatico. Verifiche manuali:
+Nessun test automatico dedicato. Verifiche manuali:
 
 - Navigare a `/admin/*` come non-admin → messaggio "Accesso riservato".
-- Toggle `test`/`production` ricaricando: banner paywall cambia.
-- Editor site-content: modifica una key → reload → la stringa nuova appare.
-- Import articolo Cowork sia con FSA (Chrome) sia col fallback (Firefox).
+- Toggle `test/production` → ricaricare → banner paywall cambia.
+- Editor `SiteContent`: modifica una slug → reload → stringa aggiornata.
+- Import articolo Cowork sia con FSA (Chrome) sia con fallback (Firefox).
+- Rebuild assi: trigger da `/admin/assi/rebuild` e verifica `assiRebuildExecutions`.

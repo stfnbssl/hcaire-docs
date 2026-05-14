@@ -11,7 +11,7 @@ Storybook è **proposto** ma **non integrato**. Questa pagina documenta come si 
 
 ## Perché potrebbe servire
 
-`client/src/components/` ha **24 componenti top-level** + sottocartelle (`bartleby/`, `letture/`, `pipeline/`, `corso-fase1/`, `corso-fase2/`, `corso-fase3/`). Un Storybook permetterebbe di:
+`client/src/components/` ha decine di componenti top-level + sottocartelle (`admin/`, `bartleby/`, `letture/`, `pipeline/orchestration/`, `pipeline/output-viewers/`, `corso-fase1/`, `corso-fase2/`, `corso-fase3/`). Un Storybook permetterebbe di:
 
 - Sviluppare e testare componenti in isolamento (no app montata, no fetch necessari).
 - Documentare i casi d'uso e gli stati di ciascun componente con story esplicite.
@@ -40,12 +40,12 @@ Quando si vorrà introdurlo:
 
 ### Posizione
 
-Storybook va **dentro `hcaire-blog/client/`**, non in `hcaire-docs/`. Motivazione: ha bisogno di accesso diretto al codice TS, ai tipi, ai service, ai context. Far leggere il codice client da `hcaire-docs/` come sibling sarebbe fragile.
+Storybook va **dentro `hcaire/client/`**, non in `hcaire-docs/`. Motivazione: ha bisogno di accesso diretto al codice TS, ai tipi, ai service, ai context. Far leggere il codice client da `hcaire-docs/` come sibling sarebbe fragile.
 
 ### Installazione
 
 ```bash
-cd hcaire-blog/client
+cd hcaire/client
 npx storybook@latest init
 ```
 

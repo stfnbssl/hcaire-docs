@@ -98,7 +98,7 @@ Vedi [Architettura → Autenticazione §2](../10-architecture/autenticazione.md#
 
 ### 5.6 Automazione esterna (API key)
 
-`POST /api/contents/import` accetta `Authorization: Bearer <COWORK_API_KEY>` (verificato da `authenticateApiKey`). Permette al worker `local/coworker.ts` di pubblicare articoli generati da Cowork senza una sessione Clerk. Vedi [Local — ponte Cowork §2.1](../10-architecture/local-cowork-bridge.md#21-generazione-articoli-del-blog).
+`POST /api/contents/import` e gli endpoint Bartleby di sottomissione trace accettano `Authorization: Bearer <COWORK_API_KEY>` (verificato da `authenticateApiKey`). Permette al worker `local/` di pubblicare articoli o submitted trace generate da Cowork senza una sessione Clerk. Vedi [Local — ponte Cowork](../10-architecture/local-cowork-bridge.md).
 
 ## 6. Dati
 
@@ -117,8 +117,8 @@ Il modulo non ha collezioni proprie: tutti i dati identità vivono in **Clerk** 
 ## 8. Criticità note
 
 - **`requireAdmin` è chatty**: chiama Clerk a ogni richiesta admin. Non c'è cache. Per dashboard con molte chiamate consecutive può essere un costo. Mitigazione futura: caching `clerkUserId → role` con TTL breve.
-- **Dead code legacy**: `routes/auth.ts`, `middleware/auth.ts`, `controllers/authController.ts` espongono ancora `POST /api/login` e `POST /api/logout` su `JWT_SECRET`. Le credenziali in `authController.ts` sono `admin/admin` in chiaro con un commento "TODO: in produzione usare bcrypt". **Pulire**: nessun consumatore FE lo chiama. Vedi [Architettura → Autenticazione §7](../10-architecture/autenticazione.md#residui-legacy).
-- **API key statica** (`COWORK_API_KEY`): chi la possiede ha de facto i privilegi di `/api/contents/import`. Da ruotare se cambia il consumatore.
+- **Dead code legacy**: `routes/auth.ts`, `middleware/auth.ts`, `controllers/authController.ts` espongono ancora `POST /api/login` e `POST /api/logout` su `JWT_SECRET`. Le credenziali in `authController.ts` sono `admin/admin` in chiaro con un commento "TODO: in produzione usare bcrypt". **Pulire**: nessun consumatore FE lo chiama. Vedi [Architettura → Autenticazione](../10-architecture/autenticazione.md).
+- **API key statica** (`COWORK_API_KEY`): chi la possiede ha de facto i privilegi di `/api/contents/import` e di sottomissione trace Bartleby. Da ruotare se cambia il consumatore.
 - **`AdminRoute` solo lato client**: il check è UX. La sicurezza vera è data da `requireAdmin` lato server. Una manomissione client non aggira l'autorizzazione.
 
 ## 9. Test

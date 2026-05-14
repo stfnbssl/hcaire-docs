@@ -5,17 +5,23 @@ sidebar_position: 5
 
 # Autenticazione
 
-L'app usa **Clerk** come unico provider di identità per gli utenti finali e gli admin. Esiste anche un canale **API key** (`COWORK_API_KEY`) per automazioni esterne, e un firmaggio **HMAC SHA256** per il webhook Lemon Squeezy. Il vecchio JWT custom citato in `CLAUDE.md` è dead code.
+L'app usa **Clerk** come unico provider di identità per utenti finali e admin. Esistono inoltre:
+
+- canale **API key** (`COWORK_API_KEY`) per automazioni esterne;
+- **firma HMAC SHA256** per il webhook Lemon Squeezy.
+
+Il vecchio JWT custom in `server/src/routes/auth.ts` è dead code (vedi §7).
 
 ## 1. Modello concettuale
 
 | Soggetto | Sorgente identità | Cosa sblocca |
 |----------|-------------------|--------------|
-| Lettore anonimo | Nessuna | Contenuti `accessType: 'free'` |
+| Lettore anonimo | Nessuna | Contenuti `accessType: 'free'`, sezioni narrative pubbliche |
 | Utente registrato (free) | Clerk session | Account, contenuti free |
-| Utente plus | Clerk + `UserSubscription.status === 'active'/'on_trial'` con `plan` ∈ `{abbonato, bartleby, bartleby_plus}` | Contenuti `accessType: 'plus'`, funzionalità Bartleby |
+| Plus / Abbonato | Clerk + `UserSubscription.status ∈ {active, on_trial}` con `plan='abbonato'` | Contenuti `accessType: 'plus'` |
+| Bartleby / Bartleby Plus | Clerk + `UserSubscription.plan ∈ {bartleby, bartleby_plus}` | Aree avanzate Bartleby + contenuti plus |
 | Admin | Clerk session + `publicMetadata.role === 'admin'` | Dashboard `/admin/*`, route `/api/admin/*` |
-| Automazione esterna | API key in header `Authorization: Bearer <COWORK_API_KEY>` | `POST /api/contents/import` |
+| Automazione esterna | API key in header `Authorization: Bearer <COWORK_API_KEY>` | `POST /api/contents/import`, submission trace Bartleby |
 | Lemon Squeezy | Firma HMAC SHA256 sul body raw | `POST /webhooks/lemonsqueezy` |
 
 ## 2. Flusso login → contenuto plus
@@ -48,20 +54,18 @@ sequenceDiagram
   API->>API: requireAuth (clerkMiddleware)
   API->>DB: find UserSubscription by clerkUserId
   API-->>SPA: { status, plan }
-  SPA->>SPA: isAbbonato = active && plan ∈ {...}
 
-  alt isAbbonato
+  alt subscription active
     SPA->>API: GET /api/contents/articolo-plus (Bearer token)
     API->>API: optionalClerkAuth → userId set
-    API->>DB: find slug
-    API->>DB: find UserSubscription by clerkUserId
+    API->>DB: find slug + find UserSubscription
     API-->>SPA: 200 con contenuto completo
   else
     SPA->>U: redirect /pricing
   end
 ```
 
-Il punto sottile: la stessa rotta `GET /api/contents/:slug` cambia comportamento in base alla presenza di `userId` (e quindi di un abbonamento attivo). Il middleware è `optionalClerkAuth`, non `requireAuth`.
+Punto sottile: `GET /api/contents/:slug` cambia comportamento in base alla presenza di `userId` (e quindi di un abbonamento attivo). Il middleware è `optionalClerkAuth`, non `requireAuth`.
 
 ## 3. Frontend: ClerkProvider e hook
 
@@ -75,18 +79,24 @@ const clerkPublishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 </ClerkProvider>
 ```
 
-I componenti consumano due hook principali:
+Hook principali:
 
-- **`useUser()`** — sessione e profilo, usato in `AdminRoute` per leggere `user.publicMetadata.role`.
-- **`useAuth()`** — espone `getToken()` per ottenere il JWT Clerk da inviare come `Authorization: Bearer ...` alle rotte protette. Esempio in `SubscriptionContext`:
+- **`useUser()`** — sessione e profilo. Usato in `AdminRoute` per `user.publicMetadata.role`.
+- **`useAuth()`** — espone `getToken()` per ottenere il JWT Clerk da mettere in `Authorization: Bearer ...`. Esempio in `SubscriptionContext`:
 
 ```ts
-const { getToken, isSignedIn } = useAuth();
+const { getToken } = useAuth();
 const token = await getToken();
 const data = await getSubscriptionStatus(token);
 ```
 
+Hook custom helper:
+
+- **`useIsAdmin()`** — wrapper che legge `useUser()` e verifica il ruolo, restituendo `boolean`.
+
 ### `AdminRoute`
+
+Check FE-only (UX):
 
 ```tsx
 function AdminRoute({ children }) {
@@ -99,11 +109,11 @@ function AdminRoute({ children }) {
 }
 ```
 
-Il check è **esclusivamente UX**. Tutte le rotte API admin ripetono il controllo lato server.
+Tutte le rotte API admin ripetono il controllo lato server.
 
 ## 4. Backend: middleware Clerk
 
-`server/src/middleware/clerkAuth.ts` espone tre primitivi:
+`server/src/middleware/clerkAuth.ts` espone:
 
 ```ts
 // Globale, già montato in index.ts:
@@ -131,17 +141,15 @@ export const requireAdmin = async (req, res, next) => {
 };
 ```
 
+Helper: `checkIsAdmin(userId): Promise<boolean>` per usi puntuali dentro un controller.
+
 ### Punti di attenzione
 
-- **`clerkMiddleware()` globale**: applicato a tutte le route `/api/*` (montato in `index.ts` prima del mount delle route, dopo `/webhooks` e prima di `express.json`). Se mancasse, `requireAuth()` e `getAuth(req)` non avrebbero la sessione iniettata.
-- **`requireAdmin` chiama Clerk per ogni richiesta**: nessuna cache di `publicMetadata`. Su rotte admin chiamate frequentemente questo è un costo (latenza + rate limit Clerk). Da valutare un cache layer in futuro.
+- **`clerkMiddleware()` globale**: applicato prima del mount `/api/*`, dopo `/webhooks` e prima di `express.json`. Senza questo, `requireAuth()` e `getAuth(req)` non avrebbero la sessione iniettata.
+- **`requireAdmin` chiama Clerk per ogni richiesta**: nessuna cache di `publicMetadata`. Su rotte admin chiamate spesso è un costo (latenza + rate limit). Da valutare una cache.
 - **Errori opachi**: `requireAdmin` ritorna 403 anche se Clerk è irraggiungibile. Per debug serve guardare i log server.
 
-### `checkIsAdmin`
-
-Helper esportato per usi puntuali (es. controlli condizionali dentro un controller). Stessa chiamata `clerkClient.users.getUser`, ma ritorna `boolean` invece di gestire la response.
-
-## 5. API key
+## 5. API key (`COWORK_API_KEY`)
 
 `server/src/middleware/apiKeyAuth.ts`:
 
@@ -154,29 +162,34 @@ export const authenticateApiKey = (req, res, next) => {
 };
 ```
 
-Usata su `POST /api/contents/import` per consentire a script esterni (Cowork) di pubblicare articoli senza una sessione Clerk. Il segreto è una stringa statica: chi lo possiede è di fatto admin per quell'endpoint.
+Usata su:
+
+- `POST /api/contents/import` (Cowork CLI pubblica articoli).
+- Submission trace Bartleby da agenti esterni.
+
+Il segreto è una stringa statica: chi lo possiede è di fatto admin per quegli endpoint. Generare con `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` e tenere fuori dal repo.
 
 ## 6. Webhook Lemon Squeezy
 
 `server/src/routes/webhooks.ts` (`POST /webhooks/lemonsqueezy`):
 
-1. Body raccolto raw con un middleware locale (`req.on('data') / req.on('end')`) — non è `express.raw()` perché la route è montata **prima** di `express.json()` per evitare conflitti.
+1. Body raccolto raw da middleware locale (`req.on('data')` / `req.on('end')`) — la route è montata **prima** di `express.json()`.
 2. Calcolo `HMAC-SHA256(rawBody, LEMONSQUEEZY_WEBHOOK_SECRET)`.
 3. Confronto con header `x-signature`. Mismatch → `403`.
 4. Su event `subscription_*` con `clerk_user_id` in `meta.custom_data`:
    - `findOneAndUpdate({ clerkUserId }, { $set: {...} }, { upsert: true })` su `UserSubscription`.
 
-Il binding utente Clerk ↔ subscription Lemon Squeezy passa quindi per `meta.custom_data.clerk_user_id`, che deve essere impostato lato checkout (responsabilità del FE quando inizia il flusso di acquisto).
+Il binding Clerk ↔ Lemon Squeezy passa per `meta.custom_data.clerk_user_id`, impostato lato checkout dal FE.
 
-## 7. Residui legacy {#residui-legacy}
+## 7. Residui legacy
 
-`server/src/middleware/auth.ts` e `server/src/routes/auth.ts` implementano il vecchio login JWT (`POST /api/login`, `POST /api/logout`) basato su `jsonwebtoken` + `JWT_SECRET`. La route è **ancora montata** in `index.ts` con `app.use('/api', authRoutes)`, ma:
+`server/src/middleware/auth.ts` e `server/src/routes/auth.ts` implementano il vecchio login JWT (`POST /api/login`, `POST /api/logout`) basato su `jsonwebtoken` + `JWT_SECRET`. La route è ancora montata in `index.ts` ma:
 
-- Nessun file in `client/src/` chiama `/api/login`, `/api/logout` o importa un `authService`.
+- Nessun file in `client/src/` chiama `/api/login`, `/api/logout` o importa un `authService` JWT.
 - L'unico altro consumatore di `authenticateToken` è `routes/auth.ts` stesso (per il logout).
 
-→ **dead code** dal punto di vista dell'app. `JWT_SECRET` è ancora elencato in `.env.example` ma non è effettivamente necessario per il funzionamento attuale.
+→ **dead code** dal punto di vista dell'app. `JWT_SECRET` è ancora in `.env.example` ma non è necessario.
 
 :::note Cleanup futuro
-Quando si farà pulizia: rimuovere `routes/auth.ts`, `controllers/authController.ts`, `middleware/auth.ts`, `types/index.ts → JwtPayload`, `JWT_SECRET` dall'env. Rimuovere anche la dependency `jsonwebtoken` da `server/package.json`.
+Rimuovere `routes/auth.ts`, `controllers/authController.ts`, `middleware/auth.ts`, `types/index.ts → JwtPayload`, `JWT_SECRET` dall'env, dependency `jsonwebtoken` da `server/package.json`.
 :::

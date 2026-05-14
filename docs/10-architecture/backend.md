@@ -10,19 +10,19 @@ Architettura del workspace `server/`. Riferimento principale: `server/src/index.
 ## 1. Bootstrap
 
 ```
-loadEnv (dotenv.config)        ← DEVE essere il primo import
+loadEnv (dotenv.config)           ← DEVE essere il primo import
   ↓
-imports modulari (routes, services, middleware)
+import modulari (routes, services, middleware)
   ↓
 app = express()
   ↓
-app.get('/health', ...)        ← prima di qualsiasi middleware
+app.get('/health', ...)           ← prima di qualsiasi middleware
   ↓
 cors({ origin: CORS_ORIGIN })
   ↓
-app.use('/webhooks', ...)      ← PRIMA di express.json (raw body)
+app.use('/webhooks', ...)         ← PRIMA di express.json (raw body)
   ↓
-clerkMiddleware()              ← popola auth su tutte le richieste successive
+clerkMiddleware()                 ← popola auth su tutte le richieste successive
   ↓
 express.json({ limit: '10mb' })
   ↓
@@ -30,14 +30,14 @@ mount routes /api/*
   ↓
 app.listen(PORT)
   ↓
-connectDB().then(start background services)
+connectDB().then(() => start background services)
 ```
 
-L'ordine non è negoziabile e ha tre sezioni critiche:
+L'ordine non è negoziabile. Sezioni critiche:
 
-1. **`loadEnv` per primo**: `dotenv.config()` viene chiamato dentro `loadEnv.ts` importato per primissimo da `index.ts`. Serve perché molti moduli (es. `config/redis.ts`) leggono `process.env` al loro module-load time.
-2. **`/webhooks` prima di `express.json()`**: il webhook Lemon Squeezy verifica una firma HMAC SHA256 sul body grezzo. Una volta che `express.json` parsa il body, la firma non è più verificabile.
-3. **`clerkMiddleware()` globale**: applicato a tutte le route `/api/*`. Le route protette usano poi `requireAuth` o `requireAdmin` da `middleware/clerkAuth.ts`. Le route pubbliche usano `optionalClerkAuth` per leggere `userId` senza bloccare.
+1. **`loadEnv` per primo**: `dotenv.config()` dentro `loadEnv.ts` importato prima di tutto. Molti moduli leggono `process.env` al load time (`config/redis.ts`, `config/db.ts`, R2 client, Telegraf, Clerk).
+2. **`/webhooks` prima di `express.json()`**: il webhook Lemon Squeezy verifica una firma HMAC SHA256 sul body grezzo. Dopo `express.json()` la firma non è più verificabile.
+3. **`clerkMiddleware()` globale**: applicato prima delle route `/api/*`. Le route protette aggiungono `requireAuth` o `requireAdmin`; le pubbliche possono usare `optionalClerkAuth` per leggere `userId` senza bloccare.
 
 ## 2. Health check
 
@@ -48,88 +48,92 @@ app.get('/health', (_req, res) => {
 });
 ```
 
-Posizionato **prima** di CORS, Clerk e parser. Risponde anche quando la connessione DB è in stato `connecting` (`readyState === 2`).
+Posizionato prima di CORS, Clerk e parser. Risponde anche con DB in `connecting` (`readyState === 2`).
 
 ## 3. Mount delle routes
 
+23 file in `server/src/routes/`, mount centralizzato in `index.ts`:
+
 | Mount | File | Auth |
 |-------|------|------|
-| `/webhooks` | `routes/webhooks.ts` | Firma HMAC SHA256 (Lemon Squeezy) |
-| `/api/contents` | `routes/content.ts` | Mix: pubblico, `optionalClerkAuth`, `requireAdmin`, `authenticateApiKey` per `/import` |
-| `/api/navigation` | `routes/nav.ts` | Pubblico |
-| `/api/article-requests` | `routes/articleRequests.ts` | Pubblico (POST), admin (GET) |
-| `/api/subscriptions` | `routes/subscriptions.ts` | `requireAuth` |
-| `/api/site-config` | `routes/siteConfig.ts` | Pubblico (GET), admin (PUT) |
-| `/api/site-content` | `routes/siteContent.ts` (`siteContentPublicRouter`) | Pubblico |
-| `/api/admin/site-content` | `routes/siteContent.ts` (`siteContentAdminRouter`) | `requireAdmin` |
-| `/api/bartleby` | `routes/bartleby.ts` | Mix (fuori scope) |
-| `/api/hcaire` | `routes/hcaire.ts` | Pubblico |
-| `/api/sviluppo-bambino` | `routes/sviluppoBambino.ts` | Pubblico (~22 endpoint) |
-| `/api/pipeline` | `routes/pipeline.ts` | Mix |
-| `/api/letture` | `routes/letture.ts` | Pubblico |
-| `/api/admin/letture` | `routes/letture.ts` (`lettureAdminRouter`) | `requireAdmin` (incluso `POST .../steps/:step_id/run`) |
-| `/api` | `routes/auth.ts` (legacy) | **Dead code** — vedi [Autenticazione §6](./autenticazione.md#residui-legacy) |
+| `/webhooks` | `webhooks.ts` | Firma HMAC (Lemon Squeezy) |
+| `/api/contents` | `content.ts` | Pubblico / `optionalClerkAuth` / `requireAdmin`; `POST /import` API key |
+| `/api/navigation` | `nav.ts` | Pubblico; modifie admin |
+| `/api/article-requests` | `articleRequests.ts` | POST pubblico; admin GET/DELETE |
+| `/api/subscriptions` | `subscriptions.ts` | `requireAuth` su `/status`; webhook secret |
+| `/api/site-config` | `siteConfig.ts` | Pubblico (GET); admin (PUT) |
+| `/api/site-content` | `siteContent.ts` (public) | Pubblico |
+| `/api/admin/site-content` | `siteContent.ts` (admin) | `requireAdmin` |
+| `/api/hcaire` | `hcaire.ts` | Pubblico (GET); admin (modifie) |
+| `/api/metodo` | `metodo.ts` | idem |
+| `/api/sviluppo-bambino` | `sviluppoBambino.ts` | idem |
+| `/api/assi` | `assi.ts` | admin |
+| `/api/admin/assi-chapters` | `assiChapters.ts` | admin |
+| `/api/admin/catalog/{authors,books}` | `catalogAuthors.ts`, `catalogBooks.ts` | Pubblico (GET); admin (modifie con upload R2) |
+| `/api/bartleby` | `bartleby.ts` | Pubblico (GET KB); API key o admin (POST trace) |
+| `/api/letture` | `letture.ts` | Pubblico |
+| `/api/admin/letture` | `letture.ts` (admin) | `requireAdmin` (incluso `POST .../steps/:step_id/run`) |
+| `/api/pipeline` | `pipeline.ts` | Pubblico (GET); admin (modifie) |
+| `/api/archivio/temi` | `archivioTemi.ts` | Pubblico (GET); admin (modifie) |
+| `/api/admin/skills` | `skills.ts` | admin |
+| `/api/admin/plugins` | `plugins.ts` | admin |
+| `/api/admin/job-definitions` | `jobDefinitions.ts` | admin |
+| `/api/admin/job-requests` | `jobRequests.ts` | admin |
+| `/api` | `auth.ts` (legacy) | **Dead code** — vedi [Autenticazione](./autenticazione.md) |
 
-Vedi [Routing](./routing.md) per la mappa estesa.
+Per la mappa completa lato FE → BE vedi [Routing](./routing.md).
 
 ## 4. Servizi di background
 
-Avviati dopo `connectDB()`, ciascuno in un blocco `try/catch` indipendente: il fallimento di uno **non** impedisce l'avvio degli altri.
+Avviati dopo `connectDB()`, ciascuno in `try/catch` indipendente: il fallimento di uno **non** impedisce gli altri.
 
 ```ts
 connectDB().then(() => {
-  try { startTelegramBot(); } catch (err) { ... }
-  try { startPipelineEventSubscriber(); startPipelineWatchdog(); } catch (err) { ... }
-  try { startLettureEventSubscriber(); startLettureWatchdog(); } catch (err) { ... }
+  try { startTelegramBot(); } catch (err) { /* log */ }
+  try { startPipelineEventSubscriber(); startPipelineWatchdog(); } catch (err) { /* log */ }
+  try { startLettureEventSubscriber(); startLettureWatchdog(); } catch (err) { /* log */ }
+  try { startAssiEventSubscriber(); } catch (err) { /* log */ }
+  try { startBartlebyTraceSubscriber(); } catch (err) { /* log */ }
 });
 ```
 
 | Servizio | File | Cosa fa |
 |----------|------|---------|
-| `startTelegramBot` | `services/telegramBot.ts` | Avvia bot Telegraf, comandi |
-| `startPipelineEventSubscriber` | `services/pipelineEventSubscriber.ts` | `SUBSCRIBE` su `hcaire:pipeline:events`, aggiorna `PipelineStepExecution` e `PipelineContext` |
-| `startPipelineWatchdog` | idem | `setInterval` ogni `PIPELINE_WATCHDOG_INTERVAL_MS` (default 5 min): marca come `fallito` le execution rimaste `in_coda`/`in_esecuzione` oltre soglia |
-| `startLettureEventSubscriber` | `services/lettureEventSubscriber.ts` | Speculare per letture |
-| `startLettureWatchdog` | idem | Speculare |
+| `startTelegramBot` | `services/telegramBot.ts` | Avvia bot Telegraf (`TELEGRAM_TOKEN` + `TELEGRAM_ID`). Pattern `genera articoli` per spawn Cowork CLI in `COWORK_PROJECT_PATH`. Append tracce a `COWORK_FILE_ARTICOLO`. |
+| `startPipelineEventSubscriber` | `services/pipelineEventSubscriber.ts` | `SUBSCRIBE` su `pipeline:step:execution:complete`. Aggiorna `PipelineStepExecution` + `PipelineContext`. Throttling log (20 righe / 2 s). |
+| `startPipelineWatchdog` | idem | `setInterval` `PIPELINE_WATCHDOG_INTERVAL_MS`: marca timed-out le execution oltre `PIPELINE_DEFAULT_TIMEOUT_MS`. |
+| `startLettureEventSubscriber` + watchdog | `services/lettureEventSubscriber.ts` | Speculare per letture (Opera.steps[]). |
+| `startAssiEventSubscriber` | `services/assiEventSubscriber.ts` | Reagisce a eventi rebuild assi (importazione/normalizzazione da archivio FS). |
+| Bartleby trace subscriber | `services/messageBus.ts` (`CHANNEL_BARTLEBY_TRACE_NEW`) | Riceve nuove `InputTrace` per generazione output. |
 
-## 5. Bus Redis pipeline
+## 5. Bus Redis
 
-`services/messageBus.ts` definisce il protocollo `PipelineMessageBus`:
+`services/messageBus.ts` definisce le costanti dei canali:
 
-| Direzione | Operazione | Chiave/Canale | Scopo |
-|-----------|------------|---------------|-------|
-| Server → Worker | `LPUSH` | `hcaire:pipeline:commands` | `step.run`, `step.cancel`, `step.ping` |
-| Worker → Server | `PUBLISH` | `hcaire:pipeline:events` | `step.started`, `step.log`, `step.completed`, `step.failed`, `step.cancelled`, `step.pong` |
+| Canale / Lista | Direzione | Scopo |
+|----------------|-----------|-------|
+| `CHANNEL_ARTICLE_NEW` (`article:new`) | server → local | Nuovo `ArticleRequest` Telegram |
+| `CHANNEL_BARTLEBY_TRACE_NEW` (`bartleby:trace:new`) | server → local | Nuova `InputTrace` Bartleby |
+| `hcaire:pipeline:commands` (lista) | server → local | `step.run`, `step.cancel`, `step.ping` |
+| `hcaire:pipeline:events` (pub/sub) | local → server | Esito step pipeline (started/log/completed/failed/cancelled) |
+| `hcaire:letture:commands`, `hcaire:letture:events` | bidirezionale | Pipeline letture |
+| `hcaire:assi:rebuild:commands`, `hcaire:assi:rebuild:events` | bidirezionale | Rebuild assi |
 
-Pattern ioredis usato:
+Pattern ioredis: **pub** via `getRedisClient()` singleton; **sub** via `pub.duplicate({ lazyConnect: false })` (Redis richiede connessione separata per i subscriber).
 
-- **pub** → client condiviso da `getRedisClient()` (lazy connect).
-- **sub** → `pub.duplicate({ lazyConnect: false })` perché Redis richiede una connessione separata per i subscriber.
+### Throttling log pipeline
 
-Speculare in `services/lettureMessageBus.ts` su `hcaire:letture:*`.
-
-### Throttling dei log
-
-`pipelineEventSubscriber.handleLog` non scrive su MongoDB ad ogni messaggio. Usa un buffer per execution con flush a:
-
-- 20 righe accumulate (`FLUSH_AFTER_LINES`), oppure
-- 2 secondi dall'ultima riga (`FLUSH_AFTER_MS`).
-
-Lo `$push` su `log_lines` di `PipelineStepExecution` è quindi batched.
+`pipelineEventSubscriber.handleLog` bufferizza per execution, flush a 20 righe o 2 s di idle. Lo `$push` su `log_lines` di `PipelineStepExecution` è batched.
 
 ### Trigger F2 → F3 (bridge ambiti)
 
-Quando arriva un `pipeline.step.completed` per `f3_step_6` con stato `completato` — ultimo step della sequenza lineare F2 — il subscriber popola atomicamente nello stesso `$set` Mongo un `pending_decision` di tipo `f2_to_f3_tema_selection` sulla ricerca. Le opzioni sono lette dall'output di `f2_step_5` verificato. La scrittura atomica garantisce che il polling del frontend, alla prima fetch dopo il completamento, veda contemporaneamente lo step `completato` e il banner di decisione (no race window).
+A `pipeline.step.completed` per `f3_step_6` (ultimo step F2) il subscriber popola atomicamente, nello stesso `$set` Mongo, un `pending_decision` di tipo `f2_to_f3_tema_selection` sulla ricerca. Le opzioni provengono dall'output di `f2_step_5` verificato. La scrittura atomica garantisce no-race lato frontend: al primo polling dopo il completamento, FE vede contemporaneamente lo step `completato` e il banner di decisione.
 
-Vedi [Produzioni §3.1](../20-modules/sviluppo-bambino/produzioni.md#31-bridge-f2--f3-ad-ambiti-1n-tema--dispositivi) per il modello dati `tema_ambiti` e gli endpoint del bridge.
-
-> **Modificato in v3.0 (D7-pipeline-f3-redesign, 2026-05-06)**: nelle versioni precedenti il subscriber gestiva un override post-verifica di `f3_step_6b` (`applyOverrideStep6b` impostava `overrides_applied.step_6b_proxy = true`). Nel modello F3 ridotto a 5 step `f3_step_6b` non esiste più — il dispositivo è prodotto e finalizzato lungo `2 → 3 → 4` senza sostituzioni ex post. Il branch è stato rimosso.
+Vedi [Produzioni — Bridge ambiti](../20-modules/sviluppo-bambino/produzioni.md) per il modello dati `tema_ambiti` e gli endpoint del bridge.
 
 ### Watchdog
 
-Soglia: `PIPELINE_DEFAULT_TIMEOUT_MS + PIPELINE_WATCHDOG_GRACE_MS` (default 300s + 60s = 360s).
-
-Ogni tick:
+Soglia: `PIPELINE_DEFAULT_TIMEOUT_MS + PIPELINE_WATCHDOG_GRACE_MS` (default 600 s + 60 s).
 
 ```js
 PipelineStepExecution.find({
@@ -141,9 +145,9 @@ PipelineStepExecution.find({
 })
 ```
 
-Le execution scadute passano a `fallito` con `error.source: 'timeout'` e propagazione su `PipelineContext`.
+Le execution scadute passano a `fallito` con `error.source: 'timeout'` e propagano su `PipelineContext`.
 
-## 6. Flusso eventi pipeline (FE ↔ BE ↔ Mongo ↔ Redis)
+## 6. Flusso eventi pipeline (FE ↔ BE ↔ Mongo ↔ Redis ↔ Cowork)
 
 ```mermaid
 sequenceDiagram
@@ -152,36 +156,34 @@ sequenceDiagram
   participant Mongo as MongoDB
   participant Redis as Redis Cloud
   participant Local as local/ worker
-  participant Cowork as Coworker (Cowork CLI)
+  participant Cowork as Cowork CLI
 
-  FE->>API: POST /api/admin/letture/:slug/steps/:step/run
+  FE->>API: POST /api/pipeline/executions (step.run)
   API->>Mongo: insert PipelineStepExecution (status: in_coda)
-  API->>Redis: LPUSH hcaire:pipeline:commands (step.run)
+  API->>Redis: LPUSH hcaire:pipeline:commands
   API-->>FE: 202 Accepted (execution_id)
 
   Local->>Redis: BRPOP hcaire:pipeline:commands
   Redis-->>Local: messaggio step.run
-  Local->>Cowork: spawn coworker per step
+  Local->>Cowork: spawn Claude CLI per step
   Local->>Redis: PUBLISH hcaire:pipeline:events (step.started)
 
-  Redis-->>API: messaggio step.started (subscriber)
-  API->>Mongo: update PipelineStepExecution (status: in_esecuzione)
+  Redis-->>API: step.started
+  API->>Mongo: update execution (status: in_esecuzione)
 
   loop log streaming
     Cowork-->>Local: stdout
     Local->>Redis: PUBLISH step.log
-    Redis-->>API: step.log
-    API->>API: buffer log (20 righe / 2s)
-    API->>Mongo: $push log_lines (batch)
+    Redis-->>API: step.log (batch 20 righe / 2 s)
+    API->>Mongo: $push log_lines
   end
 
   Cowork-->>Local: exit code + output file
-  Local->>Redis: PUBLISH step.completed (output_file, output_data)
+  Local->>Redis: PUBLISH step.completed
   Redis-->>API: step.completed
-  API->>API: copia output → client/public/pipeline/
-  API->>Mongo: update execution + context (status: completato)
+  API->>Mongo: update execution + context
 
-  Note over API,Mongo: Watchdog (ogni 5 min):<br/>execution >360s → fallito
+  Note over API,Mongo: Watchdog: execution oltre soglia → fallito
 ```
 
 ## 7. Persistenza
@@ -195,21 +197,21 @@ const mongoUrl = urlTemplate
 await mongoose.connect(mongoUrl);
 ```
 
-`MONGODB_URL` arriva con `{password}` come placeholder e senza database name (`mongodb+srv://.../?...`). Il codice li inietta entrambi prima della connessione. Vedi [Database](./database.md) per modelli e collection.
+`MONGODB_URL` arriva con `{password}` come placeholder e senza database name. Il codice li inietta prima della connessione. Modelli e collection in [Database](./database.md).
 
 ## 8. Gestione errori
 
-Pattern non uniforme. Tre approcci coesistenti:
+Pattern non uniforme:
 
-- Controller con `try/catch` esplicito che ritorna `res.status(N).json({ error: '...' })`.
-- Middleware (es. `requireAdmin`) che chiamano direttamente `res.status(...)` e `return` senza `next(err)`.
-- Background services con `try/catch` di startup e logging via `console.error`.
+- Controller con `try/catch` esplicito → `res.status(N).json({ error: '...' })`.
+- Middleware che rispondono direttamente con `res.status(...)` e `return`.
+- Background services con `try/catch` di startup + log `console.error`.
 
-**Non c'è** un error handler Express globale (`app.use((err, req, res, next) => ...)`). Eventuali eccezioni async non gestite finiscono nel listener `unhandledRejection` di Node.
+**Non c'è** un error handler Express globale. Eccezioni async non gestite finiscono nel listener `unhandledRejection` di Node.
 
 ## 9. Variabili d'ambiente critiche
 
-Vedi [Inventario §7](../00-overview/inventario.md#7-variabili-dambiente). Le tre verificate esplicitamente all'avvio:
+Vedi [Inventario §6](../00-overview/inventario.md#6-variabili-dambiente-server). All'avvio vengono loggate:
 
 ```ts
 ['MONGODB_PASSWORD', 'MONGODB_URL', 'CLERK_SECRET_KEY']
